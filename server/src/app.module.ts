@@ -6,6 +6,7 @@ import { UserModule } from './user/user.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { ConfigModule } from '@nestjs/config';
+import { ChatGateway } from './chat/chat.gateway';
 
 @Module({
   imports: [AuthModule, UserModule,
@@ -13,7 +14,7 @@ import { ConfigModule } from '@nestjs/config';
       host: 'localhost',
       port: 5432,
       username: 'postgres',
-      password: 'Oneclick1@',
+      password: 'Dwarkesh@1   ',
       type: 'postgres',
       database: 'mydb',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
@@ -31,6 +32,6 @@ import { ConfigModule } from '@nestjs/config';
     ConfigModule.forRoot({ isGlobal: true , envFilePath :'.env'})
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, ChatGateway],
 })
 export class AppModule { }

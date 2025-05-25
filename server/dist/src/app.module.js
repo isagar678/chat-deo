@@ -25,7 +25,7 @@ exports.AppModule = AppModule = __decorate([
                 host: 'localhost',
                 port: 5432,
                 username: 'postgres',
-                password: 'Oneclick1@',
+                password: 'Dwarkesh@1',
                 type: 'postgres',
                 database: 'mydb',
                 entities: [__dirname + '/**/*.entity{.ts,.js}'],
