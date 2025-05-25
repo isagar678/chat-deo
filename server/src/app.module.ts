@@ -14,7 +14,7 @@ import { ChatGateway } from './chat/chat.gateway';
       host: 'localhost',
       port: 5432,
       username: 'postgres',
-      password: 'Dwarkesh@1   ',
+      password: 'Dwarkesh@1',
       type: 'postgres',
       database: 'mydb',
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
