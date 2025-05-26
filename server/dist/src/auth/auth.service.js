@@ -28,6 +28,15 @@ let AuthService = class AuthService {
         }
         return null;
     }
+    verifySocketToken(token) {
+        try {
+            const payload = this.jwtService.verify(token);
+            return { userId: payload.sub, username: payload.username };
+        }
+        catch (error) {
+            throw new common_1.UnauthorizedException();
+        }
+    }
     async login(user) {
         const payload = { username: user.userName, sub: user.id };
         return {

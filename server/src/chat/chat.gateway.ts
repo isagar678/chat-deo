@@ -11,11 +11,14 @@ import {
 } from "@nestjs/websockets";
 
 import { Server, Socket } from "socket.io";
+import { AuthService } from "src/auth/auth.service";
 
 @WebSocketGateway()
 export class ChatGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(ChatGateway.name);
+ 
+  constructor(private authService: AuthService) {}
 
   @WebSocketServer() io: Server;
 
@@ -26,16 +29,29 @@ export class ChatGateway
   handleConnection(client: any, ...args: any[]) {
     const { sockets } = this.io.sockets;
 
-    this.logger.log(`Client id: ${client.id} connected`);
+    const token_received = client.handshake.headers?.authorization?.split(' ')[1];
+
+    try {
+      const { userId, username } = this.authService.verifySocketToken(token_received)
+      client.userId=userId
+      client.username=username
+      
+    } catch (err) {
+      client.emit('unauthorized', { message: err.message });
+      client.disconnect();
+    }
+
+
+    this.logger.log(`Client id: ${client.username} connected`);
     this.logger.debug(`Number of connected clients: ${sockets.size}`);
   }
 
   handleDisconnect(client: any) {
     this.logger.log(`Cliend id:${client.id} disconnected`);
   }
-  
+
   @SubscribeMessage('privateMessage')
-  sendPrivateMessage(@MessageBody() data: { recipientId: string; message: string },@ConnectedSocket() client:Socket) {
+  sendPrivateMessage(@MessageBody() data: { recipientId: string; message: string }, @ConnectedSocket() client: Socket) {
     const recipient = this.io.sockets.sockets.get(data.recipientId);
     this.logger.log(`Message received from client id: ${client.id}`);
 

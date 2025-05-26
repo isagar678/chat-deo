@@ -17,15 +17,30 @@ exports.ChatGateway = void 0;
 const common_1 = require("@nestjs/common");
 const websockets_1 = require("@nestjs/websockets");
 const socket_io_1 = require("socket.io");
+const auth_service_1 = require("../auth/auth.service");
 let ChatGateway = ChatGateway_1 = class ChatGateway {
+    authService;
     logger = new common_1.Logger(ChatGateway_1.name);
+    constructor(authService) {
+        this.authService = authService;
+    }
     io;
     afterInit() {
         this.logger.log("Initialized");
     }
     handleConnection(client, ...args) {
         const { sockets } = this.io.sockets;
-        this.logger.log(`Client id: ${client.id} connected`);
+        const token_received = client.handshake.headers?.authorization?.split(' ')[1];
+        try {
+            const { userId, username } = this.authService.verifySocketToken(token_received);
+            client.userId = userId;
+            client.username = username;
+        }
+        catch (err) {
+            client.emit('unauthorized', { message: err.message });
+            client.disconnect();
+        }
+        this.logger.log(`Client id: ${client.username} connected`);
         this.logger.debug(`Number of connected clients: ${sockets.size}`);
     }
     handleDisconnect(client) {
@@ -62,6 +77,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], ChatGateway.prototype, "sendPrivateMessage", null);
 exports.ChatGateway = ChatGateway = ChatGateway_1 = __decorate([
-    (0, websockets_1.WebSocketGateway)()
+    (0, websockets_1.WebSocketGateway)(),
+    __metadata("design:paramtypes", [auth_service_1.AuthService])
 ], ChatGateway);
 //# sourceMappingURL=chat.gateway.js.map

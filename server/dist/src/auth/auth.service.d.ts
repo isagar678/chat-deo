@@ -5,6 +5,10 @@ export declare class AuthService {
     private jwtService;
     constructor(userService: UserService, jwtService: JwtService);
     validateUser(username: string, password: string): Promise<any>;
+    verifySocketToken(token: string): {
+        userId: any;
+        username: any;
+    };
     login(user: any): Promise<{
         access_token: string;
     }>;

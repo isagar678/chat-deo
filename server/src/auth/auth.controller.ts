@@ -60,7 +60,7 @@ export class AuthController {
   @UseGuards(GoogleOAuthGuard)
   async googleAuthCallback(@Req() req, @Res() res:Response) {
     const token = await this.authService.register(req.user);
-console.log(token,'______________________________')
+    console.log(token,'______________________________')
     // res.cookie('access_token', token, {
     //   maxAge: 2592000000,
     //   sameSite: true,
