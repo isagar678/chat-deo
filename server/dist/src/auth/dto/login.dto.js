@@ -22,7 +22,7 @@ __decorate([
     (0, class_validator_1.IsNotEmpty)(),
     (0, swagger_1.ApiProperty)({
         description: `Enter user name`,
-        example: `john`
+        example: `john`,
     }),
     __metadata("design:type", String)
 ], LoginDto.prototype, "username", void 0);
@@ -31,7 +31,7 @@ __decorate([
     (0, class_validator_1.IsNotEmpty)(),
     (0, swagger_1.ApiProperty)({
         description: `Enter password`,
-        example: `changeme`
+        example: `changeme`,
     }),
     __metadata("design:type", String)
 ], LoginDto.prototype, "password", void 0);

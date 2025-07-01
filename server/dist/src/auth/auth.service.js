@@ -40,7 +40,7 @@ let AuthService = class AuthService {
     async login(user) {
         const payload = { username: user.userName, sub: user.id };
         return {
-            access_token: this.jwtService.sign(payload)
+            access_token: this.jwtService.sign(payload),
         };
     }
     async register(userData) {
@@ -49,12 +49,22 @@ let AuthService = class AuthService {
             await this.userService.create(userData);
             const payload = { username: userData.userName, sub: userData.id };
             return {
-                access_token: this.jwtService.sign(payload)
+                access_token: this.jwtService.sign(payload),
             };
         }
         else {
             throw new common_1.ConflictException();
         }
+    }
+    async googleRegister(userData) {
+        const user = await this.userService.findUser(userData);
+        if (!user) {
+            await this.userService.create(userData);
+        }
+        const payload = { username: userData.userName, sub: userData.id };
+        return {
+            access_token: this.jwtService.sign(payload),
+        };
     }
 };
 exports.AuthService = AuthService;

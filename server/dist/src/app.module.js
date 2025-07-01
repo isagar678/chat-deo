@@ -21,27 +21,37 @@ let AppModule = class AppModule {
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
-        imports: [auth_module_1.AuthModule, user_module_1.UserModule,
-            typeorm_1.TypeOrmModule.forRoot({
-                host: 'localhost',
-                port: 5432,
-                username: 'postgres',
-                password: 'Dwarkesh@1',
-                type: 'postgres',
-                database: 'mydb',
-                entities: [__dirname + '/**/*.entity{.ts,.js}'],
-                synchronize: true,
+        imports: [
+            auth_module_1.AuthModule,
+            user_module_1.UserModule,
+            typeorm_1.TypeOrmModule.forRootAsync({
+                imports: [config_1.ConfigModule],
+                inject: [config_1.ConfigService],
+                useFactory: (configService) => ({
+                    type: 'postgres',
+                    host: configService.get('DB_HOST'),
+                    port: configService.get('DB_PORT'),
+                    username: configService.get('DB_USERNAME'),
+                    password: configService.get('DB_PASSWORD'),
+                    database: configService.get('DB_NAME'),
+                    entities: [__dirname + '/**/*.entity{.ts,.js}'],
+                    synchronize: true,
+                }),
             }),
-            mailer_1.MailerModule.forRoot({
-                transport: {
-                    host: `sandbox.smtp.mailtrap.io`,
-                    auth: {
-                        user: `71e593084812bd`,
-                        pass: `50a952fbc6c5ce`,
+            mailer_1.MailerModule.forRootAsync({
+                imports: [config_1.ConfigModule],
+                inject: [config_1.ConfigService],
+                useFactory: (configService) => ({
+                    transport: {
+                        host: configService.get('MAILER_HOST'),
+                        auth: {
+                            user: configService.get('MAILER_USER'),
+                            pass: configService.get('MAILER_PASS'),
+                        },
                     },
-                },
+                }),
             }),
-            config_1.ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' })
+            config_1.ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService, chat_gateway_1.ChatGateway],

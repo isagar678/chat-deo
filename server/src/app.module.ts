@@ -5,33 +5,45 @@ import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MailerModule } from '@nestjs-modules/mailer';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ChatGateway } from './chat/chat.gateway';
 
 @Module({
-  imports: [AuthModule, UserModule,
-    TypeOrmModule.forRoot({
-      host: 'localhost',
-      port: 5432,
-      username: 'postgres',
-      password: 'Dwarkesh@1',
-      type: 'postgres',
-      database: 'mydb',
-      entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: true,
+  imports: [
+    AuthModule,
+    UserModule,
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        type: 'postgres',
+        host: configService.get<string>('DB_HOST'),
+        port: configService.get<number>('DB_PORT'),
+        username: configService.get<string>('DB_USERNAME'),
+        password: configService.get<string>('DB_PASSWORD'),
+        database: configService.get<string>('DB_NAME'),
+        entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        synchronize: true,
+      }),
     }),
-    MailerModule.forRoot({
-      transport: {
-        host: `sandbox.smtp.mailtrap.io`,
-        auth: {
-          user: `71e593084812bd`,
-          pass: `50a952fbc6c5ce`,
+
+    MailerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        transport: {
+          host: configService.get<string>('MAILER_HOST'),
+          auth: {
+            user: configService.get<string>('MAILER_USER'),
+            pass: configService.get<string>('MAILER_PASS'),
+          },
         },
-      },
+      }),
     }),
-    ConfigModule.forRoot({ isGlobal: true , envFilePath :'.env'})
+
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
   ],
   controllers: [AppController],
   providers: [AppService, ChatGateway],
 })
-export class AppModule { }
+export class AppModule {}

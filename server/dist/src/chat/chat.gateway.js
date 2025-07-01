@@ -26,7 +26,7 @@ let ChatGateway = ChatGateway_1 = class ChatGateway {
     }
     io;
     afterInit() {
-        this.logger.log("Initialized");
+        this.logger.log('Initialized');
     }
     handleConnection(client, ...args) {
         const { sockets } = this.io.sockets;
@@ -52,7 +52,7 @@ let ChatGateway = ChatGateway_1 = class ChatGateway {
         if (recipient) {
             recipient.emit('privateMessageReceived', {
                 message: data.message,
-                from: client.id,
+                from: client.userId,
             });
         }
         else {
@@ -73,7 +73,7 @@ __decorate([
     __param(0, (0, websockets_1.MessageBody)()),
     __param(1, (0, websockets_1.ConnectedSocket)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, socket_io_1.Socket]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", void 0)
 ], ChatGateway.prototype, "sendPrivateMessage", null);
 exports.ChatGateway = ChatGateway = ChatGateway_1 = __decorate([

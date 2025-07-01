@@ -17,14 +17,14 @@ const passport_google_oauth2_1 = require("passport-google-oauth2");
 let GoogleStrategy = class GoogleStrategy extends (0, passport_1.PassportStrategy)(passport_google_oauth2_1.Strategy, 'google') {
     constructor(configService) {
         super({
-            clientID: configService.get('GOOGLE_CLIENT_ID') || '',
-            clientSecret: configService.get('GOOGLE_CLIENT_SECRET') || '',
-            callbackURL: configService.get('GOOGLE_CALLBACK_URL') || '',
-            scope: ['email', 'profile']
+            clientID: configService.get('GOOGLE_CLIENT_ID') ?? '',
+            clientSecret: configService.get('GOOGLE_CLIENT_SECRET') ?? '',
+            callbackURL: configService.get('GOOGLE_CALLBACK_URL') ?? '',
+            scope: ['email', 'profile'],
         });
     }
     async validate(_accessToken, _refreshToken, profile, done) {
-        const { id, name, emails } = profile;
+        const { name, emails } = profile;
         const user = {
             name: `${name.givenName} ${name.familyName}`,
             userName: `${name.givenName}`,

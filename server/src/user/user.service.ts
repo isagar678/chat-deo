@@ -5,25 +5,22 @@ import { Repository } from 'typeorm';
 
 @Injectable()
 export class UserService {
-    constructor(
-        @InjectRepository(User)
-        private userRepository: Repository<User>,
-    ) { }
-    
-    async findOne(userName: string): Promise<User | null>{
-        return await this.userRepository.findOne({where:{userName}})
-    }
+  constructor(
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+  ) {}
 
-    async findUser(userData): Promise<User | null> {
-        return await this.userRepository.findOne({
-            where: [
-                { userName: userData.userName },
-                { email: userData.email },
-            ]
-        })
-    }
+  async findOne(userName: string): Promise<User | null> {
+    return await this.userRepository.findOne({ where: { userName } });
+  }
 
-    async create(userData): Promise<any> {
-        return await this.userRepository.save(userData)
-    }
+  async findUser(userData): Promise<User | null> {
+    return await this.userRepository.findOne({
+      where: [{ userName: userData.userName }, { email: userData.email }],
+    });
+  }
+
+  async create(userData): Promise<any> {
+    return await this.userRepository.save(userData);
+  }
 }

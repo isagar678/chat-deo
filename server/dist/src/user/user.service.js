@@ -27,10 +27,7 @@ let UserService = class UserService {
     }
     async findUser(userData) {
         return await this.userRepository.findOne({
-            where: [
-                { userName: userData.userName },
-                { email: userData.email },
-            ]
+            where: [{ userName: userData.userName }, { email: userData.email }],
         });
     }
     async create(userData) {

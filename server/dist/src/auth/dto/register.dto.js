@@ -24,7 +24,7 @@ __decorate([
     (0, class_validator_1.IsString)(),
     (0, swagger_1.ApiProperty)({
         description: `Enter name`,
-        example: `john`
+        example: `john`,
     }),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "name", void 0);
@@ -33,7 +33,7 @@ __decorate([
     (0, class_validator_1.IsString)(),
     (0, swagger_1.ApiProperty)({
         description: `Enter user name`,
-        example: `johnBanegaDon`
+        example: `johnBanegaDon`,
     }),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "userName", void 0);
@@ -42,7 +42,7 @@ __decorate([
     (0, class_validator_1.IsEmail)(),
     (0, swagger_1.ApiProperty)({
         description: `Enter user name`,
-        example: `john@gmail.com`
+        example: `john@gmail.com`,
     }),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "email", void 0);
@@ -51,7 +51,7 @@ __decorate([
     (0, class_validator_1.MinLength)(4),
     (0, swagger_1.ApiProperty)({
         description: `Enter user name`,
-        example: `john543`
+        example: `john543`,
     }),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "password", void 0);

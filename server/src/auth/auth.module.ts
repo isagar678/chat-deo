@@ -10,16 +10,17 @@ import { LocalStrategy } from './strategy/local.strategy';
 import { GoogleStrategy } from './strategy/google.strategy';
 
 @Module({
-  imports: [UserModule, PassportModule,
+  imports: [
+    UserModule,
+    PassportModule,
     JwtModule.register({
-      secret: 'sagar',
       signOptions: {
-        expiresIn:'1d'
-      }
-    })
+        expiresIn: '1d',
+      },
+    }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy,GoogleStrategy],
-  exports:[AuthService]
+  providers: [AuthService, LocalStrategy, JwtStrategy, GoogleStrategy],
+  exports: [AuthService],
 })
 export class AuthModule {}

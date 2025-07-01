@@ -1,4 +1,4 @@
-import { Logger } from "@nestjs/common";
+import { Logger } from '@nestjs/common';
 import {
   ConnectedSocket,
   MessageBody,
@@ -8,39 +8,40 @@ import {
   SubscribeMessage,
   WebSocketGateway,
   WebSocketServer,
-} from "@nestjs/websockets";
+} from '@nestjs/websockets';
 
-import { Server, Socket } from "socket.io";
-import { AuthService } from "src/auth/auth.service";
+import { Server, Socket } from 'socket.io';
+import { AuthService } from 'src/auth/auth.service';
 
 @WebSocketGateway()
 export class ChatGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
+{
   private readonly logger = new Logger(ChatGateway.name);
- 
-  constructor(private authService: AuthService) {}
+
+  constructor(private readonly authService: AuthService) {}
 
   @WebSocketServer() io: Server;
 
   afterInit() {
-    this.logger.log("Initialized");
+    this.logger.log('Initialized');
   }
 
   handleConnection(client: any, ...args: any[]) {
     const { sockets } = this.io.sockets;
 
-    const token_received = client.handshake.headers?.authorization?.split(' ')[1];
+    const token_received =
+      client.handshake.headers?.authorization?.split(' ')[1];
 
     try {
-      const { userId, username } = this.authService.verifySocketToken(token_received)
-      client.userId=userId
-      client.username=username
-      
+      const { userId, username } =
+        this.authService.verifySocketToken(token_received);
+      client.userId = userId;
+      client.username = username;
     } catch (err) {
       client.emit('unauthorized', { message: err.message });
       client.disconnect();
     }
-
 
     this.logger.log(`Client id: ${client.username} connected`);
     this.logger.debug(`Number of connected clients: ${sockets.size}`);
@@ -51,14 +52,17 @@ export class ChatGateway
   }
 
   @SubscribeMessage('privateMessage')
-  sendPrivateMessage(@MessageBody() data: { recipientId: string; message: string }, @ConnectedSocket() client: Socket) {
+  sendPrivateMessage(
+    @MessageBody() data: { recipientId: string; message: string },
+    @ConnectedSocket() client,
+  ) {
     const recipient = this.io.sockets.sockets.get(data.recipientId);
     this.logger.log(`Message received from client id: ${client.id}`);
 
     if (recipient) {
       recipient.emit('privateMessageReceived', {
         message: data.message,
-        from: client.id,
+        from: client.userId,
       });
     } else {
       client.emit('privateMessageReceived', {

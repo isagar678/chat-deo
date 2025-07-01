@@ -21,17 +21,19 @@ let AuthModule = class AuthModule {
 exports.AuthModule = AuthModule;
 exports.AuthModule = AuthModule = __decorate([
     (0, common_1.Module)({
-        imports: [user_module_1.UserModule, passport_1.PassportModule,
+        imports: [
+            user_module_1.UserModule,
+            passport_1.PassportModule,
             jwt_1.JwtModule.register({
                 secret: 'sagar',
                 signOptions: {
-                    expiresIn: '1d'
-                }
-            })
+                    expiresIn: '1d',
+                },
+            }),
         ],
         controllers: [auth_controller_1.AuthController],
         providers: [auth_service_1.AuthService, local_strategy_1.LocalStrategy, jwt_strategy_1.JwtStrategy, google_strategy_1.GoogleStrategy],
-        exports: [auth_service_1.AuthService]
+        exports: [auth_service_1.AuthService],
     })
 ], AuthModule);
 //# sourceMappingURL=auth.module.js.map

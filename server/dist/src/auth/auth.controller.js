@@ -32,13 +32,13 @@ let AuthController = class AuthController {
     async register(userData) {
         return await this.authService.register(userData);
     }
-    async getProfile(req) {
+    getProfile(req) {
         return req.user;
     }
     async auth() { }
     async googleAuthCallback(req, res) {
-        const token = await this.authService.register(req.user);
-        console.log(token, '______________________________');
+        const data = await this.authService.googleRegister(req.user);
+        res.cookie('access_token', data);
         res.redirect('http://localhost:3000/api');
     }
 };
@@ -46,13 +46,13 @@ exports.AuthController = AuthController;
 __decorate([
     (0, common_1.UseGuards)(local_auth_guard_1.LocalAuthGuard),
     (0, common_1.Post)('login'),
-    (0, swagger_1.ApiOperation)({ summary: "Login through username and password" }),
+    (0, swagger_1.ApiOperation)({ summary: 'Login through username and password' }),
     (0, swagger_1.ApiBody)({ type: login_dto_1.LoginDto }),
-    (0, swagger_1.ApiResponse)({ status: 201, description: "Api success" }),
-    (0, swagger_1.ApiResponse)({ status: 422, description: "Bad Request or API error message" }),
-    (0, swagger_1.ApiResponse)({ status: 404, description: "Not found!" }),
-    (0, swagger_1.ApiResponse)({ status: 409, description: "User Already Exist" }),
-    (0, swagger_1.ApiResponse)({ status: 500, description: "Internal server error!" }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Api success' }),
+    (0, swagger_1.ApiResponse)({ status: 422, description: 'Bad Request or API error message' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Not found!' }),
+    (0, swagger_1.ApiResponse)({ status: 409, description: 'User Already Exist' }),
+    (0, swagger_1.ApiResponse)({ status: 500, description: 'Internal server error!' }),
     __param(0, (0, common_1.Request)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -60,13 +60,13 @@ __decorate([
 ], AuthController.prototype, "login", null);
 __decorate([
     (0, common_1.Post)('register'),
-    (0, swagger_1.ApiOperation)({ summary: "Register user" }),
+    (0, swagger_1.ApiOperation)({ summary: 'Register user' }),
     (0, swagger_1.ApiBody)({ type: register_dto_1.RegisterDto }),
-    (0, swagger_1.ApiResponse)({ status: 201, description: "Api success" }),
-    (0, swagger_1.ApiResponse)({ status: 422, description: "Bad Request or API error message" }),
-    (0, swagger_1.ApiResponse)({ status: 404, description: "Not found!" }),
-    (0, swagger_1.ApiResponse)({ status: 409, description: "User Already Exist" }),
-    (0, swagger_1.ApiResponse)({ status: 500, description: "Internal server error!" }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Api success' }),
+    (0, swagger_1.ApiResponse)({ status: 422, description: 'Bad Request or API error message' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Not found!' }),
+    (0, swagger_1.ApiResponse)({ status: 409, description: 'User Already Exist' }),
+    (0, swagger_1.ApiResponse)({ status: 500, description: 'Internal server error!' }),
     __param(0, (0, common_1.Body)(common_1.ValidationPipe)),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [register_dto_1.RegisterDto]),
@@ -76,22 +76,22 @@ __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Get)('profile'),
     (0, swagger_1.ApiBearerAuth)('access-token'),
-    (0, swagger_1.ApiOperation)({ summary: "Get user profile" }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: "Api success" }),
-    (0, swagger_1.ApiResponse)({ status: 404, description: " Not found!" }),
-    (0, swagger_1.ApiResponse)({ status: 500, description: "Internal server error!" }),
+    (0, swagger_1.ApiOperation)({ summary: 'Get user profile' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Api success' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: ' Not found!' }),
+    (0, swagger_1.ApiResponse)({ status: 500, description: 'Internal server error!' }),
     __param(0, (0, common_1.Request)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", Promise)
+    __metadata("design:returntype", Object)
 ], AuthController.prototype, "getProfile", null);
 __decorate([
     (0, common_1.UseGuards)(o_auth_guard_1.GoogleOAuthGuard),
     (0, common_1.Get)('google'),
-    (0, swagger_1.ApiOperation)({ summary: "OAuth endpoint" }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: "Api success" }),
-    (0, swagger_1.ApiResponse)({ status: 404, description: " Not found!" }),
-    (0, swagger_1.ApiResponse)({ status: 500, description: "Internal server error!" }),
+    (0, swagger_1.ApiOperation)({ summary: 'OAuth endpoint' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Api success' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: ' Not found!' }),
+    (0, swagger_1.ApiResponse)({ status: 500, description: 'Internal server error!' }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
