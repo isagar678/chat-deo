@@ -9,30 +9,22 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.LoginDto = void 0;
-const swagger_1 = require("@nestjs/swagger");
-const class_validator_1 = require("class-validator");
-class LoginDto {
-    username;
-    password;
-}
-exports.LoginDto = LoginDto;
+exports.BlackListTokens = void 0;
+const typeorm_1 = require("typeorm");
+let BlackListTokens = class BlackListTokens extends typeorm_1.BaseEntity {
+    id;
+    token;
+};
+exports.BlackListTokens = BlackListTokens;
 __decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsNotEmpty)(),
-    (0, swagger_1.ApiProperty)({
-        description: `Enter user name`,
-        example: `johnBanegaDon`,
-    }),
-    __metadata("design:type", String)
-], LoginDto.prototype, "username", void 0);
+    (0, typeorm_1.PrimaryGeneratedColumn)(),
+    __metadata("design:type", Number)
+], BlackListTokens.prototype, "id", void 0);
 __decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsNotEmpty)(),
-    (0, swagger_1.ApiProperty)({
-        description: `Enter password`,
-        example: `john543`,
-    }),
+    (0, typeorm_1.Column)('text', { unique: true, name: 'token' }),
     __metadata("design:type", String)
-], LoginDto.prototype, "password", void 0);
-//# sourceMappingURL=login.dto.js.map
+], BlackListTokens.prototype, "token", void 0);
+exports.BlackListTokens = BlackListTokens = __decorate([
+    (0, typeorm_1.Entity)({ name: 'blackListTokens' })
+], BlackListTokens);
+//# sourceMappingURL=blackListToken.entity.js.map

@@ -15,11 +15,10 @@ import { AuthService } from 'src/auth/auth.service';
 
 @WebSocketGateway()
 export class ChatGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
-{
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(ChatGateway.name);
 
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   @WebSocketServer() io: Server;
 
@@ -34,10 +33,9 @@ export class ChatGateway
       client.handshake.headers?.authorization?.split(' ')[1];
 
     try {
-      const { userId, username } =
-        this.authService.verifySocketToken(token_received);
-      client.userId = userId;
-      client.username = username;
+      const data = this.authService.verifySocketToken(token_received);
+      client.userId = data?.userId;
+      client.username = data?.username;
     } catch (err) {
       client.emit('unauthorized', { message: err.message });
       client.disconnect();

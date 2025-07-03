@@ -22,6 +22,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { GoogleOAuthGuard } from './guard/o-auth.guard';
 import { Response } from 'express';
+import { AccessTokenDto } from './dto/accessToken.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -52,6 +53,17 @@ export class AuthController {
     return await this.authService.register(userData);
   }
 
+  @Post('token')
+  @ApiOperation({ summary: 'Get new access token from refresh token' })
+  @ApiBody({ type: AccessTokenDto })
+  @ApiResponse({ status: 201, description: 'Api success' })
+  @ApiResponse({ status: 422, description: 'Bad Request or API error message' })
+  @ApiResponse({ status: 404, description: 'Not found!' })
+  @ApiResponse({ status: 500, description: 'Internal server error!' })
+  async getAccessToken(@Body(ValidationPipe) accessTokenDto: AccessTokenDto) {
+    return await this.authService.generateAccessTokenFromRefreshToken(accessTokenDto?.refreshToken);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get('profile')
   @ApiBearerAuth('access-token')
@@ -77,8 +89,9 @@ export class AuthController {
     @Req() req: Request & { user: any },
     @Res() res: Response,
   ) {
-    const data  = await this.authService.googleRegister(req.user);
-    res.cookie('access_token',data)
+    const data = await this.authService.googleRegister(req.user);
+    res.cookie('access_token', data.access_token)
+    res.cookie('refresh_token', data.refresh_token)
     res.redirect('http://localhost:3000/api');
   }
 }

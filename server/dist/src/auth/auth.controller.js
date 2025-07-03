@@ -21,6 +21,7 @@ const swagger_1 = require("@nestjs/swagger");
 const login_dto_1 = require("./dto/login.dto");
 const register_dto_1 = require("./dto/register.dto");
 const o_auth_guard_1 = require("./guard/o-auth.guard");
+const accessToken_dto_1 = require("./dto/accessToken.dto");
 let AuthController = class AuthController {
     authService;
     constructor(authService) {
@@ -32,13 +33,17 @@ let AuthController = class AuthController {
     async register(userData) {
         return await this.authService.register(userData);
     }
+    async getAccessToken(accessTokenDto) {
+        return await this.authService.generateAccessTokenFromRefreshToken(accessTokenDto?.refreshToken);
+    }
     getProfile(req) {
         return req.user;
     }
     async auth() { }
     async googleAuthCallback(req, res) {
         const data = await this.authService.googleRegister(req.user);
-        res.cookie('access_token', data);
+        res.cookie('access_token', data.access_token);
+        res.cookie('refresh_token', data.refresh_token);
         res.redirect('http://localhost:3000/api');
     }
 };
@@ -72,6 +77,19 @@ __decorate([
     __metadata("design:paramtypes", [register_dto_1.RegisterDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "register", null);
+__decorate([
+    (0, common_1.Post)('token'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get new access token from refresh token' }),
+    (0, swagger_1.ApiBody)({ type: accessToken_dto_1.AccessTokenDto }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Api success' }),
+    (0, swagger_1.ApiResponse)({ status: 422, description: 'Bad Request or API error message' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Not found!' }),
+    (0, swagger_1.ApiResponse)({ status: 500, description: 'Internal server error!' }),
+    __param(0, (0, common_1.Body)(common_1.ValidationPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [accessToken_dto_1.AccessTokenDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "getAccessToken", null);
 __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Get)('profile'),

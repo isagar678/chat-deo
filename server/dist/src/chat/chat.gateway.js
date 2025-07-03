@@ -32,9 +32,9 @@ let ChatGateway = ChatGateway_1 = class ChatGateway {
         const { sockets } = this.io.sockets;
         const token_received = client.handshake.headers?.authorization?.split(' ')[1];
         try {
-            const { userId, username } = this.authService.verifySocketToken(token_received);
-            client.userId = userId;
-            client.username = username;
+            const data = this.authService.verifySocketToken(token_received);
+            client.userId = data?.userId;
+            client.username = data?.username;
         }
         catch (err) {
             client.emit('unauthorized', { message: err.message });
