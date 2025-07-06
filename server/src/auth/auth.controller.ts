@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Ip,
   Post,
   Req,
   Request,
@@ -60,8 +61,8 @@ export class AuthController {
   @ApiResponse({ status: 422, description: 'Bad Request or API error message' })
   @ApiResponse({ status: 404, description: 'Not found!' })
   @ApiResponse({ status: 500, description: 'Internal server error!' })
-  async getAccessToken(@Body(ValidationPipe) accessTokenDto: AccessTokenDto) {
-    return await this.authService.generateAccessTokenFromRefreshToken(accessTokenDto?.refreshToken);
+  async getAccessToken(@Body(ValidationPipe) accessTokenDto: AccessTokenDto,@Ip() ip:string) {
+    return await this.authService.generateAccessTokenFromRefreshToken(accessTokenDto?.refreshToken,ip);
   }
 
   @UseGuards(JwtAuthGuard)

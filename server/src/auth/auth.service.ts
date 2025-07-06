@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from 'src/user/user.service';
-import { BlackListTokens } from './blackListToken.entity';
+import { RefreshTokens } from '../entities/blackListToken.entity';
 import { ConfigService } from '@nestjs/config';
 import { handleTokenErrors } from 'src/UsefulFunction';
 
@@ -79,18 +79,23 @@ export class AuthService {
     };
   }
 
-  async isTokenBlackListed(token) {
-    const isBlackListed = await BlackListTokens.findOne({ where: { token } })
-    if (isBlackListed) {
+  async isTokenBlackListed(requestToken) {
+    const token = await RefreshTokens.findOne({ where: { token:requestToken } })
+    if (token?.isBlacklisted) {
       throw new UnauthorizedException('Blacklisted')
     }
+    return token;
   }
 
-  async generateAccessTokenFromRefreshToken(refreshToken) {
+  async generateAccessTokenFromRefreshToken(refreshToken,ip:string) {
     try {
       const verifiedPayload = this.jwtService.verify(refreshToken, { secret: this.configService.get('JWT_REFRESH_SECRET') })
 
-      await this.isTokenBlackListed(refreshToken)
+      const token = await this.isTokenBlackListed(refreshToken)
+
+      if (token?.ip === ip) {
+        throw new ConflictException('IP conflict')
+      }
 
       const payload = { sub: verifiedPayload.sub, username: verifiedPayload.username };
 
