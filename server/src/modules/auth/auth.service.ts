@@ -4,10 +4,11 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { UserService } from 'src/user/user.service';
-import { RefreshTokens } from '../../entities/blackListToken.entity';
+import { UserService } from 'src/modules/user/user.service';
+import { RefreshTokens } from '../../entities/refreshToken.entity';
 import { ConfigService } from '@nestjs/config';
 import { handleTokenErrors } from 'src/UsefulFunction';
+import { Role } from 'src/enum/role.enum';
 
 @Injectable()
 export class AuthService {
@@ -29,7 +30,7 @@ export class AuthService {
   verifySocketToken(token: string) {
     try {
       const payload = this.jwtService.verify(token);
-      return { userId: payload.sub, username: payload.username };
+      return { userId: payload.id, username: payload.username,role:payload.role };
     } catch (error) {
       handleTokenErrors(error)
     }
@@ -37,7 +38,7 @@ export class AuthService {
 
   async login(user: any) {
     try {
-      const payload = { username: user.userName, sub: user.id };
+      const payload = { username: user.userName, id: user.id, role:Role.User };
 
       return {
         access_token: this.jwtService.sign(payload, { expiresIn: '15m', secret: this.configService.get('JWT_SECRET') }),
@@ -54,7 +55,7 @@ export class AuthService {
     if (!user) {
       await this.userService.create(userData);
 
-      const payload = { username: userData.userName, sub: userData.id };
+      const payload = { username: userData.userName, id: userData.id, role: Role.User };
 
       return {
         access_token: this.jwtService.sign(payload, { expiresIn: '15m', secret: this.configService.get('JWT_SECRET') }),
@@ -71,7 +72,8 @@ export class AuthService {
     if (!user) {
       await this.userService.create(userData);
     }
-    const payload = { username: userData.userName, sub: userData.id };
+
+    const payload = { username: userData.userName, id: userData.id, role: Role.User };
 
     return {
       access_token: this.jwtService.sign(payload, { expiresIn: '15m', secret: this.configService.get('JWT_SECRET') }),
@@ -97,7 +99,7 @@ export class AuthService {
         throw new ConflictException('IP conflict')
       }
 
-      const payload = { sub: verifiedPayload.sub, username: verifiedPayload.username };
+      const payload = { id: verifiedPayload.id, username: verifiedPayload.username,role: verifiedPayload.role };
 
       return {
         access_token: this.jwtService.sign(payload, { expiresIn: '15m', secret: this.configService.get('JWT_SECRET') })

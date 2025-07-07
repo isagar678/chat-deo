@@ -31,8 +31,8 @@ import { Role } from 'src/enum/role.enum';
 export class AuthController {
   constructor(private readonly authService: AuthService) { }
 
-  @UseGuards(LocalAuthGuard)
   @Post('login')
+  @UseGuards(LocalAuthGuard)
   @ApiOperation({ summary: 'Login through username and password' })
   @ApiBody({ type: LoginDto })
   @ApiResponse({ status: 201, description: 'Api success' })
@@ -99,6 +99,8 @@ export class AuthController {
   }
 
   @Get('admin/route/test')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
   @Roles(Role.Admin)
   async routeForAdmin() {
     return 'admin route'

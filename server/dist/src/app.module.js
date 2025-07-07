@@ -10,12 +10,12 @@ exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
 const app_controller_1 = require("./app.controller");
 const app_service_1 = require("./app.service");
-const auth_module_1 = require("./auth/auth.module");
-const user_module_1 = require("./user/user.module");
+const auth_module_1 = require("./modules/auth/auth.module");
+const user_module_1 = require("./modules/user/user.module");
 const typeorm_1 = require("@nestjs/typeorm");
 const mailer_1 = require("@nestjs-modules/mailer");
 const config_1 = require("@nestjs/config");
-const chat_gateway_1 = require("./chat/chat.gateway");
+const chat_gateway_1 = require("./modules/chat/chat.gateway");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
