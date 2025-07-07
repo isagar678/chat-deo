@@ -82,7 +82,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Api success' })
   @ApiResponse({ status: 404, description: ' Not found!' })
   @ApiResponse({ status: 500, description: 'Internal server error!' })
-  async auth() { /*  Method is empty as the endpoint will redirect to google/redirect */ }
+  async auth() { /*   Method is empty as the endpoint will redirect to google/redirect */ }
 
   @Get('google/redirect')
   @UseGuards(GoogleOAuthGuard)
