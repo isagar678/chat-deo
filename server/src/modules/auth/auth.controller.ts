@@ -24,6 +24,8 @@ import { RegisterDto } from './dto/register.dto';
 import { GoogleOAuthGuard } from './guard/o-auth.guard';
 import { Response } from 'express';
 import { AccessTokenDto } from './dto/accessToken.dto';
+import { Roles } from 'src/decorators/role.decorator';
+import { Role } from 'src/enum/role.enum';
 
 @Controller('auth')
 export class AuthController {
@@ -61,8 +63,8 @@ export class AuthController {
   @ApiResponse({ status: 422, description: 'Bad Request or API error message' })
   @ApiResponse({ status: 404, description: 'Not found!' })
   @ApiResponse({ status: 500, description: 'Internal server error!' })
-  async getAccessToken(@Body(ValidationPipe) accessTokenDto: AccessTokenDto,@Ip() ip:string) {
-    return await this.authService.generateAccessTokenFromRefreshToken(accessTokenDto?.refreshToken,ip);
+  async getAccessToken(@Body(ValidationPipe) accessTokenDto: AccessTokenDto, @Ip() ip: string) {
+    return await this.authService.generateAccessTokenFromRefreshToken(accessTokenDto?.refreshToken, ip);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -94,5 +96,11 @@ export class AuthController {
     res.cookie('access_token', data.access_token)
     res.cookie('refresh_token', data.refresh_token)
     res.redirect('http://localhost:3000/api');
+  }
+
+  @Get('admin/route/test')
+  @Roles(Role.Admin)
+  async routeForAdmin() {
+    return 'admin route'
   }
 }
