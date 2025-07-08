@@ -1,6 +1,6 @@
 import { BaseEntity, Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 
-@Entity({name:'refreshTokens'})
+@Entity({name:'refreshTokens',schema:'auth',})
 export class RefreshTokens extends BaseEntity{
     @PrimaryGeneratedColumn()
     id: number

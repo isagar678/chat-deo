@@ -27,29 +27,18 @@ export class AuthService {
     return null;
   }
 
-  verifySocketToken(token: string) {
+  async login(user: any,ip) {
     try {
-      const payload = this.jwtService.verify(token);
-      return { userId: payload.id, username: payload.username,role:payload.role };
-    } catch (error) {
-      handleTokenErrors(error)
-    }
-  }
 
-  async login(user: any) {
-    try {
       const payload = { username: user.userName, id: user.id, role:Role.User };
-
-      return {
-        access_token: this.jwtService.sign(payload, { expiresIn: '15m', secret: this.configService.get('JWT_SECRET') }),
-        refresh_token: this.jwtService.sign(payload, { expiresIn: '2d', secret: this.configService.get('JWT_REFRESH_SECRET') })
-      };
+      return await this.generateTokenPair(payload, ip)
+      
     } catch (error) {
       handleTokenErrors(error)
     }
   }
 
-  async register(userData) {
+  async register(userData,ip) {
     const user = await this.userService.findUser(userData);
 
     if (!user) {
@@ -57,16 +46,14 @@ export class AuthService {
 
       const payload = { username: userData.userName, id: userData.id, role: Role.Admin };
 
-      return {
-        access_token: this.jwtService.sign(payload, { expiresIn: '15m', secret: this.configService.get('JWT_SECRET') }),
-        refresh_token: this.jwtService.sign(payload, { expiresIn: '2d', secret: this.configService.get('JWT_REFRESH_SECRET') })
-      };
+      return await this.generateTokenPair(payload, ip)
+
     } else {
       throw new ConflictException();
     }
   }
 
-  async googleRegister(userData) {
+  async googleRegister(userData,ip) {
     const user = await this.userService.findUser(userData);
 
     if (!user) {
@@ -75,10 +62,7 @@ export class AuthService {
 
     const payload = { username: userData.userName, id: userData.id, role: Role.User };
 
-    return {
-      access_token: this.jwtService.sign(payload, { expiresIn: '15m', secret: this.configService.get('JWT_SECRET') }),
-      refresh_token: this.jwtService.sign(payload, { expiresIn: '2d', secret: this.configService.get('JWT_REFRESH_SECRET') })
-    };
+    return await this.generateTokenPair(payload, ip)
   }
 
   async isTokenBlackListed(requestToken) {
@@ -95,17 +79,41 @@ export class AuthService {
 
       const token = await this.isTokenBlackListed(refreshToken)
 
-      if (token?.ip === ip) {
+      if (token?.ip !== ip) {
         throw new ConflictException('IP conflict')
       }
 
+      await RefreshTokens.update({ id: token.id }, { isBlacklisted: true })
+      
       const payload = { id: verifiedPayload.id, username: verifiedPayload.username,role: verifiedPayload.role };
 
-      return {
-        access_token: this.jwtService.sign(payload, { expiresIn: '15m', secret: this.configService.get('JWT_SECRET') })
-      };
+      return await this.generateTokenPair(payload, ip)
+
     } catch (error) {
       handleTokenErrors(error)
     }
   }
+
+  async generateTokenPair(payload: any, ip: string) {
+    const access_token = this.jwtService.sign(payload, { expiresIn: '15m', secret: this.configService.get('JWT_SECRET') });
+    const refresh_token = this.jwtService.sign(payload, { expiresIn: '2d', secret: this.configService.get('JWT_REFRESH_SECRET') });
+
+    await RefreshTokens.insert({ token: refresh_token, ip })
+
+    return {
+      access_token,
+      refresh_token
+    }
+
+  }
+
+  verifySocketToken(token: string) {
+    try {
+      const payload = this.jwtService.verify(token);
+      return { userId: payload.id, username: payload.username, role: payload.role };
+    } catch (error) {
+      handleTokenErrors(error)
+    }
+  }
+
 }
