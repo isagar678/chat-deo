@@ -4,8 +4,6 @@ import {
   Get,
   Ip,
   Post,
-  Req,
-  Request,
   Res,
   UseGuards,
   ValidationPipe,
@@ -27,6 +25,8 @@ import { AccessTokenDto } from './dto/accessToken.dto';
 import { Roles } from 'src/decorators/role.decorator';
 import { Role } from 'src/enum/role.enum';
 import { RolesGuard } from './guard/roles.guard';
+import { CurrentUser } from 'src/decorators/currentUser.decorator';
+import { User } from 'src/entities/user.entity';
 
 @Controller('auth')
 export class AuthController {
@@ -41,8 +41,8 @@ export class AuthController {
   @ApiResponse({ status: 404, description: 'Not found!' })
   @ApiResponse({ status: 409, description: 'User Already Exist' })
   @ApiResponse({ status: 500, description: 'Internal server error!' })
-  async login(@Request() req: Request & { user: any }) {
-    return this.authService.login(req.user);
+  async login(@CurrentUser() user: User,) {
+    return this.authService.login(user);
   }
 
   @Post('register')
@@ -75,8 +75,8 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Api success' })
   @ApiResponse({ status: 404, description: ' Not found!' })
   @ApiResponse({ status: 500, description: 'Internal server error!' })
-  getProfile(@Request() req: Request & { user: any }): any {
-    return req.user;
+  getProfile(@CurrentUser() user: User,): any {
+    return user;
   }
 
   @UseGuards(GoogleOAuthGuard)
@@ -90,10 +90,10 @@ export class AuthController {
   @Get('google/redirect')
   @UseGuards(GoogleOAuthGuard)
   async googleAuthCallback(
-    @Req() req: Request & { user: any },
+    @CurrentUser() user : User,
     @Res() res: Response,
   ) {
-    const data = await this.authService.googleRegister(req.user);
+    const data = await this.authService.googleRegister(user);
     res.cookie('access_token', data.access_token)
     res.cookie('refresh_token', data.refresh_token)
     res.redirect('http://localhost:3000/api');
@@ -103,7 +103,7 @@ export class AuthController {
   @Roles(Role.Admin)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @ApiBearerAuth('access-token')
-  async routeForAdmin(@Req() req: Request & { user: any },) {
+  async routeForAdmin(@CurrentUser() user: User,) {
     return 'admin route'
   }
 }
