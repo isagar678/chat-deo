@@ -26,6 +26,7 @@ import { Response } from 'express';
 import { AccessTokenDto } from './dto/accessToken.dto';
 import { Roles } from 'src/decorators/role.decorator';
 import { Role } from 'src/enum/role.enum';
+import { RolesGuard } from './guard/roles.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -99,10 +100,10 @@ export class AuthController {
   }
 
   @Get('admin/route/test')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth('access-token')
   @Roles(Role.Admin)
-  async routeForAdmin() {
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @ApiBearerAuth('access-token')
+  async routeForAdmin(@Req() req: Request & { user: any },) {
     return 'admin route'
   }
 }

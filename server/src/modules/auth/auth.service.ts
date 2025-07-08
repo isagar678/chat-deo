@@ -55,7 +55,7 @@ export class AuthService {
     if (!user) {
       await this.userService.create(userData);
 
-      const payload = { username: userData.userName, id: userData.id, role: Role.User };
+      const payload = { username: userData.userName, id: userData.id, role: Role.Admin };
 
       return {
         access_token: this.jwtService.sign(payload, { expiresIn: '15m', secret: this.configService.get('JWT_SECRET') }),
