@@ -68,6 +68,17 @@ export class AuthController {
     return await this.authService.generateAccessTokenFromRefreshToken(accessTokenDto?.refreshToken, ip);
   }
 
+  @Post('forgot-password')
+  @ApiOperation({ summary: 'Generate new password' })
+  @ApiBody({ type: AccessTokenDto })
+  @ApiResponse({ status: 201, description: 'Api success' })
+  @ApiResponse({ status: 422, description: 'Bad Request or API error message' })
+  @ApiResponse({ status: 404, description: 'Not found!' })
+  @ApiResponse({ status: 500, description: 'Internal server error!' })
+  async forgotPasword(@Body(ValidationPipe) accessTokenDto: AccessTokenDto, @Ip() ip: string) {
+    return await this.authService.generateAccessTokenFromRefreshToken(accessTokenDto?.refreshToken, ip);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Get('profile')
   @ApiBearerAuth('access-token')

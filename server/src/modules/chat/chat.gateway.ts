@@ -10,7 +10,7 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets';
 
-import { Server, Socket } from 'socket.io';
+import { Server } from 'socket.io';
 import { AuthService } from 'src/modules/auth/auth.service';
 
 @WebSocketGateway()
