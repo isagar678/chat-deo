@@ -98,7 +98,7 @@ export class AuthService {
 
   async generateTokenPair(payload: any, ip: string) {
     const access_token = this.jwtService.sign(payload, { expiresIn: '15m', secret: this.configService.get('JWT_SECRET') });
-    const refresh_token = this.jwtService.sign(payload, { expiresIn: '2d', secret: this.configService.get('JWT_REFRESH_SECRET') });
+    const refresh_token = this.jwtService.sign(payload, { expiresIn: '2d', secret: this.configService.get('JWT_REFRESH_SECRET'), });
 
     await RefreshTokens.insert({ token: refresh_token, ip })
 

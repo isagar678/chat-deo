@@ -21,6 +21,13 @@ async function bootstrap() {
       'access-token', // This name is used later in @ApiBearerAuth()
     )
     .build();
+    app.enableCors({
+      origin: true, // Reflect the request origin (works with credentials)
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+      credentials: true,
+    });
+    
+
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, documentFactory);
 
