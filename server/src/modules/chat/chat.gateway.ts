@@ -13,6 +13,8 @@ import {
 import { Server } from 'socket.io';
 import { AuthService } from 'src/modules/auth/auth.service';
 
+const onlineUsers = new Map<string, string>() //user id, client id
+
 @WebSocketGateway()
 export class ChatGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
@@ -41,11 +43,14 @@ export class ChatGateway
       client.disconnect();
     }
 
-    this.logger.log(`Client id: ${client.username} connected`);
+    onlineUsers.set(client.userId, client.id)
+
+    this.logger.log(`Client ${client.username} connected`);
     this.logger.debug(`Number of connected clients: ${sockets.size}`);
   }
 
   handleDisconnect(client: any) {
+    onlineUsers.delete(client.userId)
     this.logger.log(`Cliend id:${client.id} disconnected`);
   }
 
@@ -54,7 +59,9 @@ export class ChatGateway
     @MessageBody() data: { recipientId: string; message: string },
     @ConnectedSocket() client,
   ) {
-    const recipient = this.io.sockets.sockets.get(data.recipientId);
+    const recipientSocketId = onlineUsers.get(data.recipientId);
+    const recipient = this.io.sockets.sockets.get(String(recipientSocketId))
+
     this.logger.log(`Message received from client id: ${client.id}`);
 
     if (recipient) {
@@ -62,11 +69,29 @@ export class ChatGateway
         message: data.message,
         from: client.userId,
       });
+
     } else {
       client.emit('privateMessageReceived', {
         message: 'wrong recepient',
         from: client.id,
       });
+    }
+  }
+
+  @SubscribeMessage('getUserOnlineStatus')
+  getUserStatus(
+    @ConnectedSocket() client,
+    @MessageBody() data:{recipientId:string}
+  ){
+    if (onlineUsers.get(data.recipientId)) {
+      client.emit('availabilityStatus',{
+        message:`Online`,
+      })
+    }
+    else{
+      client.emit('availabilityStatus',{
+        message:`Offline`,
+      })
     }
   }
 }
