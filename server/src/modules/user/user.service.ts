@@ -20,7 +20,12 @@ export class UserService {
     });
   }
 
+  async searchUsers(userName):Promise<User[]|null>{
+    return await User.createQueryBuilder("user").select("user.id","user.userName").where("(user.userName ILIKE :username)",{username:`%${userName}%`}).getRawMany()
+  }
+
   async create(userData): Promise<any> {
     return await this.userRepository.save(userData);
   }
+
 }
