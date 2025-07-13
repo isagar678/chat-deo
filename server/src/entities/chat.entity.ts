@@ -1,5 +1,4 @@
-import { Role } from "src/enum/role.enum";
-import { BaseEntity, Column, CreateDateColumn, Entity, JoinColumn, JoinTable, ManyToMany, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
+import { BaseEntity, Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { User } from "./user.entity";
 
 @Entity({ name: 'chats', schema: 'user' })
@@ -13,11 +12,11 @@ export class Chats extends BaseEntity {
     @CreateDateColumn()
     createdAt: Date;
 
-    @ManyToOne(() => User,{ onDelete: 'CASCADE' })
-    @JoinColumn({ name: 'from_id' })
+    @ManyToOne(() => User, (u) => u.chats, { onDelete: 'CASCADE' })
+    @JoinColumn([{ name: 'from_id', referencedColumnName: "id" }])
     from: User;
 
-    @ManyToOne(() => User,{ onDelete: 'CASCADE' })
-    @JoinColumn({ name: 'to_id' })
+    @ManyToOne(() => User, (u) => u.chats, { onDelete: 'CASCADE' })
+    @JoinColumn([{ name: 'to_id', referencedColumnName: "id" }])
     to: User;
 }

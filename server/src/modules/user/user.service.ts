@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../../entities/user.entity';
 import { Repository } from 'typeorm';
+import { Chats } from 'src/entities/chat.entity';
 
 @Injectable()
 export class UserService {
@@ -20,12 +21,32 @@ export class UserService {
     });
   }
 
-  async searchUsers(userName):Promise<User[]|null>{
-    return await User.createQueryBuilder("user").select("user.id","user.userName").where("(user.userName ILIKE :username)",{username:`%${userName}%`}).getRawMany()
+  async searchUsers(userName): Promise<User[] | null> {
+    return await User.createQueryBuilder("user").select("user.id", "user.userName").where("(user.userName ILIKE :username)", { username: `%${userName}%` }).getRawMany()
   }
 
   async create(userData): Promise<any> {
     return await this.userRepository.save(userData);
   }
+
+  async getFriendsOfUser(userId): Promise<User[]> {
+    const chats = await Chats.createQueryBuilder('chat')
+        .select(['chat.from', 'chat.to'])
+        .where('chat.from_id = :userId OR chat.to_id = :userId', { userId })
+        .getMany();
+
+    // Extract unique friends from the chats
+    const friendsSet = new Set<User>();
+    chats.forEach(chat => {
+        if (chat.from.id !== userId) {
+            friendsSet.add(chat.from);
+        }
+        if (chat.to.id !== userId) {
+            friendsSet.add(chat.to);
+        }
+    });
+
+    return Array.from(friendsSet);
+}
 
 }
