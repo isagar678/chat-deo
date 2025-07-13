@@ -111,7 +111,7 @@ export class AuthService {
 
   verifySocketToken(token: string) {
     try {
-      const payload = this.jwtService.verify(token);
+      const payload = this.jwtService.verify(token,{secret:this.configService.get('JWT_SECRET')});
       return { userId: payload.id, username: payload.username, role: payload.role };
     } catch (error) {
       handleTokenErrors(error)
