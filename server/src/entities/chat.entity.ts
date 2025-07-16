@@ -10,7 +10,7 @@ export class Chats extends BaseEntity {
     content: string;
 
     @CreateDateColumn()
-    createdAt: Date;
+    timeStamp: Date;
 
     @ManyToOne(() => User, (u) => u.chats, { onDelete: 'CASCADE' })
     @JoinColumn([{ name: 'from_id', referencedColumnName: "id" }])
