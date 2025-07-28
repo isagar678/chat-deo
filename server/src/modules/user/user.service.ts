@@ -29,24 +29,32 @@ export class UserService {
     return await this.userRepository.save(userData);
   }
 
-  async getFriendsOfUser(userId): Promise<User[]> {
+  async getFriendsOfUser(userId): Promise<any> {
+    console.log('userId', userId);
+
     const chats = await Chats.createQueryBuilder('chat')
-        .select(['chat.from', 'chat.to'])
-        .where('chat.from_id = :userId OR chat.to_id = :userId', { userId })
-        .getMany();
+    .leftJoinAndSelect("chat.from","from")
+    .leftJoinAndSelect("chat.to","to")
+      .select(['chat.id','from.id', 'to.id'])
+      .where('from.id = :userId OR to.id = :userId', { userId })
+      .getMany();
 
     // Extract unique friends from the chats
-    const friendsSet = new Set<User>();
+    const friendsSet = new Set();
     chats.forEach(chat => {
-        if (chat.from.id !== userId) {
-            friendsSet.add(chat.from);
-        }
-        if (chat.to.id !== userId) {
-            friendsSet.add(chat.to);
-        }
+      if (chat.from.id !== userId) {
+        friendsSet.add(chat.from);
+      }
+      if (chat.to.id !== userId) {
+        friendsSet.add(chat.to);
+      }
     });
 
     return Array.from(friendsSet);
-}
+  }
+
+  async addChat(from,to,content){
+    await Chats.insert({from,to,content})
+  }
 
 }
