@@ -46,7 +46,7 @@ export class ChatGateway
       for (const friend of friends) {
         // 3. Check if the friend is currently online
         //    (optional, but good for efficiency if you only want to send to online friends)
-        const friendClientId = onlineUsers.get(friend.id);
+        const friendClientId = onlineUsers.get(friend);
 
         if (friendClientId) { // If the friend is online
           // 4. Emit the status change event directly to the friend's personal room (which is their userId)
@@ -60,6 +60,8 @@ export class ChatGateway
           this.logger.debug(`Sent status '${status}' for ${username} to friend ${friend.userName} (${friend.id}).`);
         }
       }
+
+      return friends
     } catch (error) {
       this.logger.error(`Error sending status update for ${username}: ${error.message}`);
     }
@@ -89,15 +91,16 @@ console.log('token_received',token_received);
       }
 
       onlineUsers.set(client.userId, client.id); // Store current client ID for this user ID
-      this.logger.log(`Client ${client.username} (${client.userId}) connected.`);
+      this.logger.log(`Client ${client.username} (${client.userId}) ${client.id} connected.`);
 
       // --- Notify friends that THIS user is now online ---
-      await this.sendStatusUpdateToFriends(client.userId, client.username, 'online');
+      
 
 
       // --- Send initial status of this user's friends TO this user ---
       // This is for the newly connected client A to know which of THEIR friends are currently online.
-      const friendsOfThisUser = await this.userService.getFriendsOfUser(client.userId);
+      const friendsOfThisUser =await this.sendStatusUpdateToFriends(client.userId, client.username, 'online');
+
       const initialFriendStatuses = friendsOfThisUser.map(friend => ({
         userId: friend.id,
         username: friend.userName,
@@ -108,8 +111,7 @@ console.log('token_received',token_received);
 
 
     } catch (err) {
-      this.logger.error(`Authentication failed for client ${client.id}: ${err.message}`);
-      client.emit('unauthorized', { message: 'Authentication failed' });
+      this.logger.error(`Error occured for user id ${client.userId}`);
       client.disconnect();
     }
     this.logger.debug(`Total connected clients: ${this.io.sockets.sockets.size}`);
@@ -121,16 +123,19 @@ console.log('token_received',token_received);
   }
 
   @SubscribeMessage('privateMessage')
-  sendPrivateMessage(
+  async sendPrivateMessage(
     @MessageBody() data: { recipientId: string; message: string },
     @ConnectedSocket() client,
   ) {
     const recipientSocketId = onlineUsers.get(data.recipientId);
+
     const recipient = this.io.sockets.sockets.get(String(recipientSocketId))
 
     this.logger.log(`Message received from client id: ${client.id}`);
 
     if (recipient) {
+      this.userService.addChat(client.userId,data.recipientId,data.message)
+
       recipient.emit('privateMessageReceived', {
         message: data.message,
         from: client.userId,
@@ -141,23 +146,6 @@ console.log('token_received',token_received);
         message: 'wrong recepient',
         from: client.id,
       });
-    }
-  }
-
-  @SubscribeMessage('getUserOnlineStatus')
-  getUserStatus(
-    @ConnectedSocket() client,
-    @MessageBody() data: { recipientId: string }
-  ) {
-    if (onlineUsers.get(data.recipientId)) {
-      client.emit('availabilityStatus', {
-        message: `Online`,
-      })
-    }
-    else {
-      client.emit('availabilityStatus', {
-        message: `Offline`,
-      })
     }
   }
 }
