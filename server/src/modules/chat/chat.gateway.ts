@@ -93,10 +93,6 @@ console.log('token_received',token_received);
       onlineUsers.set(client.userId, client.id); // Store current client ID for this user ID
       this.logger.log(`Client ${client.username} (${client.userId}) ${client.id} connected.`);
 
-      // --- Notify friends that THIS user is now online ---
-      
-
-
       // --- Send initial status of this user's friends TO this user ---
       // This is for the newly connected client A to know which of THEIR friends are currently online.
       const friendsOfThisUser =await this.sendStatusUpdateToFriends(client.userId, client.username, 'online');
