@@ -9,6 +9,7 @@ import { RefreshTokens } from '../../entities/refreshToken.entity';
 import { ConfigService } from '@nestjs/config';
 import { handleTokenErrors } from 'src/UsefulFunction';
 import { Role } from 'src/enum/role.enum';
+import { Response } from 'express';
 
 @Injectable()
 export class AuthService {
@@ -27,18 +28,18 @@ export class AuthService {
     return null;
   }
 
-  async login(user: any,ip) {
+  async login(user: any, ip,res:Response) {
     try {
 
-      const payload = { username: user.userName, id: user.id, role:Role.User };
-      return await this.generateTokenPair(payload, ip)
-      
+      const payload = { username: user.userName, id: user.id, role: Role.User };
+      return await this.generateTokenPair(payload, ip,res)
+
     } catch (error) {
       handleTokenErrors(error)
     }
   }
 
-  async register(userData,ip) {
+  async register(userData, ip,res:Response) {
     const user = await this.userService.findUser(userData);
 
     if (!user) {
@@ -46,14 +47,14 @@ export class AuthService {
 
       const payload = { username: userData.userName, id: userData.id, role: Role.Admin };
 
-      return await this.generateTokenPair(payload, ip)
+      return await this.generateTokenPair(payload, ip,res)
 
     } else {
       throw new ConflictException();
     }
   }
 
-  async googleRegister(userData,ip) {
+  async googleRegister(userData, ip,res) {
     const user = await this.userService.findUser(userData);
 
     if (!user) {
@@ -62,7 +63,7 @@ export class AuthService {
 
     const payload = { username: userData.userName, id: userData.id, role: Role.User };
 
-    return await this.generateTokenPair(payload, ip)
+    return await this.generateTokenPair(payload, ip,res)
   }
 
   async isTokenBlackListed(requestToken) {
@@ -73,7 +74,7 @@ export class AuthService {
     return token;
   }
 
-  async generateAccessTokenFromRefreshToken(refreshToken, ip: string) {
+  async generateAccessTokenFromRefreshToken(refreshToken, ip: string,res) {
     try {
       const verifiedPayload = this.jwtService.verify(refreshToken, { secret: this.configService.get('JWT_REFRESH_SECRET') })
 
@@ -84,21 +85,28 @@ export class AuthService {
       }
 
       await RefreshTokens.update({ id: token.id }, { isBlacklisted: true })
-      
-      const payload = { id: verifiedPayload.id, username: verifiedPayload.username,role: verifiedPayload.role };
 
-      return await this.generateTokenPair(payload, ip)
+      const payload = { id: verifiedPayload.id, username: verifiedPayload.username, role: verifiedPayload.role };
+
+      return await this.generateTokenPair(payload, ip,res)
 
     } catch (error) {
       handleTokenErrors(error)
     }
   }
 
-  async forgotPassword(){}
+  async forgotPassword() { }
 
-  async generateTokenPair(payload: any, ip: string) {
+  async generateTokenPair(payload: any, ip: string,response) {
     const access_token = this.jwtService.sign(payload, { expiresIn: '1d', secret: this.configService.get('JWT_SECRET') });
     const refresh_token = this.jwtService.sign(payload, { expiresIn: '2d', secret: this.configService.get('JWT_REFRESH_SECRET'), });
+
+    response.cookie('refreshToken', refresh_token, {
+      httpOnly: true,
+      secure: true,
+      path: '/auth/refresh',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    })
 
     await RefreshTokens.insert({ token: refresh_token, ip })
 
@@ -111,7 +119,7 @@ export class AuthService {
 
   verifySocketToken(token: string) {
     try {
-      const payload = this.jwtService.verify(token,{secret:this.configService.get('JWT_SECRET')});
+      const payload = this.jwtService.verify(token, { secret: this.configService.get('JWT_SECRET') });
       return { userId: payload.id, username: payload.username, role: payload.role };
     } catch (error) {
       handleTokenErrors(error)

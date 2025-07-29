@@ -41,8 +41,8 @@ export class AuthController {
   @ApiResponse({ status: 404, description: 'Not found!' })
   @ApiResponse({ status: 409, description: 'User Already Exist' })
   @ApiResponse({ status: 500, description: 'Internal server error!' })
-  async login(@CurrentUser() user: User,@Ip() ip:string) {
-    return this.authService.login(user,ip);
+  async login(@Res({ passthrough: true }) res: Response,@CurrentUser() user: User,@Ip() ip:string) {
+    return await this.authService.login(user,ip,res);
   }
 
   @Post('register')
@@ -53,8 +53,8 @@ export class AuthController {
   @ApiResponse({ status: 404, description: 'Not found!' })
   @ApiResponse({ status: 409, description: 'User Already Exist' })
   @ApiResponse({ status: 500, description: 'Internal server error!' })
-  async register(@Body(ValidationPipe) userData: RegisterDto,@Ip() ip:string) {
-    return await this.authService.register(userData,ip);
+  async register(@Res({ passthrough: true }) res: Response,@Body(ValidationPipe) userData: RegisterDto,@Ip() ip:string) {
+    return await this.authService.register(userData,ip,res);
   }
 
   @Post('token')
@@ -64,8 +64,8 @@ export class AuthController {
   @ApiResponse({ status: 422, description: 'Bad Request or API error message' })
   @ApiResponse({ status: 404, description: 'Not found!' })
   @ApiResponse({ status: 500, description: 'Internal server error!' })
-  async getAccessToken(@Body(ValidationPipe) accessTokenDto: AccessTokenDto, @Ip() ip: string) {
-    return await this.authService.generateAccessTokenFromRefreshToken(accessTokenDto?.refreshToken, ip);
+  async getAccessToken(@Res({ passthrough: true }) res: Response,@Body(ValidationPipe) accessTokenDto: AccessTokenDto, @Ip() ip: string) {
+    return await this.authService.generateAccessTokenFromRefreshToken(accessTokenDto?.refreshToken, ip,res);
   }
 
   @Post('forgot-password')
@@ -75,8 +75,8 @@ export class AuthController {
   @ApiResponse({ status: 422, description: 'Bad Request or API error message' })
   @ApiResponse({ status: 404, description: 'Not found!' })
   @ApiResponse({ status: 500, description: 'Internal server error!' })
-  async forgotPasword(@Body(ValidationPipe) accessTokenDto: AccessTokenDto, @Ip() ip: string) {
-    return await this.authService.generateAccessTokenFromRefreshToken(accessTokenDto?.refreshToken, ip);
+  async forgotPasword(@Res({ passthrough: true }) res: Response,@Body(ValidationPipe) accessTokenDto: AccessTokenDto, @Ip() ip: string) {
+    return await this.authService.generateAccessTokenFromRefreshToken(accessTokenDto?.refreshToken, ip,res);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -105,7 +105,7 @@ export class AuthController {
     @Res() res: Response,
     @Ip() ip: string
   ) {
-    const data = await this.authService.googleRegister(user,ip);
+    const data = await this.authService.googleRegister(user,ip,res);
     res.cookie('access_token', data.access_token)
     res.cookie('refresh_token', data.refresh_token)
     res.redirect('http://localhost:3000/api');
