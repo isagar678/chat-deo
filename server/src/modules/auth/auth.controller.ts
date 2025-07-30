@@ -4,6 +4,7 @@ import {
   Get,
   Ip,
   Post,
+  Req,
   Res,
   UseGuards,
   ValidationPipe,
@@ -20,7 +21,7 @@ import {
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { GoogleOAuthGuard } from './guard/o-auth.guard';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { AccessTokenDto } from './dto/accessToken.dto';
 import { Roles } from 'src/decorators/role.decorator';
 import { Role } from 'src/enum/role.enum';
@@ -64,8 +65,13 @@ export class AuthController {
   @ApiResponse({ status: 422, description: 'Bad Request or API error message' })
   @ApiResponse({ status: 404, description: 'Not found!' })
   @ApiResponse({ status: 500, description: 'Internal server error!' })
-  async getAccessToken(@Res({ passthrough: true }) res: Response,@Body(ValidationPipe) accessTokenDto: AccessTokenDto, @Ip() ip: string) {
-    return await this.authService.generateAccessTokenFromRefreshToken(accessTokenDto?.refreshToken, ip,res);
+  async getAccessToken(@Req() request: Request,@Res({ passthrough: true }) res: Response,@Ip() ip: string) {
+    try {
+      const result = await this.authService.generateAccessTokenFromRefreshToken(request.cookies?.['refreshToken'], ip, res);
+      return result;
+    } catch (error) {
+      console.log(error)
+    }
   }
 
   @Post('forgot-password')
@@ -77,6 +83,19 @@ export class AuthController {
   @ApiResponse({ status: 500, description: 'Internal server error!' })
   async forgotPasword(@Res({ passthrough: true }) res: Response,@Body(ValidationPipe) accessTokenDto: AccessTokenDto, @Ip() ip: string) {
     return await this.authService.generateAccessTokenFromRefreshToken(accessTokenDto?.refreshToken, ip,res);
+  }
+
+  @Post('logout')
+  @ApiOperation({ summary: 'Logout user and clear refresh token' })
+  @ApiResponse({ status: 200, description: 'Logout successful' })
+  async logout(@Res({ passthrough: true }) res: Response) {
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: false,
+      sameSite: 'lax',
+      path: '/',
+    });
+    return { message: 'Logged out successfully' };
   }
 
   @UseGuards(JwtAuthGuard)
