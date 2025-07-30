@@ -30,7 +30,6 @@ export class UserService {
   }
 
   async getFriendsOfUser(userId): Promise<any> {
-    console.log('userId', userId);
 
     const chats = await Chats.createQueryBuilder('chat')
     .leftJoinAndSelect("chat.from","from")

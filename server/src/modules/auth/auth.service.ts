@@ -28,18 +28,18 @@ export class AuthService {
     return null;
   }
 
-  async login(user: any, ip,res:Response) {
+  async login(user: any, ip, res: Response) {
     try {
 
       const payload = { username: user.userName, id: user.id, role: Role.User };
-      return await this.generateTokenPair(payload, ip,res)
+      return await this.generateTokenPair(payload, ip, res)
 
     } catch (error) {
       handleTokenErrors(error)
     }
   }
 
-  async register(userData, ip,res:Response) {
+  async register(userData, ip, res: Response) {
     const user = await this.userService.findUser(userData);
 
     if (!user) {
@@ -47,14 +47,14 @@ export class AuthService {
 
       const payload = { username: userData.userName, id: userData.id, role: Role.Admin };
 
-      return await this.generateTokenPair(payload, ip,res)
+      return await this.generateTokenPair(payload, ip, res)
 
     } else {
       throw new ConflictException();
     }
   }
 
-  async googleRegister(userData, ip,res) {
+  async googleRegister(userData, ip, res) {
     const user = await this.userService.findUser(userData);
 
     if (!user) {
@@ -63,49 +63,59 @@ export class AuthService {
 
     const payload = { username: userData.userName, id: userData.id, role: Role.User };
 
-    return await this.generateTokenPair(payload, ip,res)
+    return await this.generateTokenPair(payload, ip, res)
   }
 
   async isTokenBlackListed(requestToken) {
     const token = await RefreshTokens.findOne({ where: { token: requestToken } })
+
     if (token?.isBlacklisted) {
       throw new UnauthorizedException('Blacklisted')
     }
     return token;
   }
 
-  async generateAccessTokenFromRefreshToken(refreshToken, ip: string,res) {
+  async generateAccessTokenFromRefreshToken(refreshToken, ip: string, res) {
     try {
+      if (!refreshToken) {
+        throw new UnauthorizedException('No refresh token provided');
+      }
+
       const verifiedPayload = this.jwtService.verify(refreshToken, { secret: this.configService.get('JWT_REFRESH_SECRET') })
 
       const token = await this.isTokenBlackListed(refreshToken)
 
-      if (token?.ip !== ip) {
-        throw new ConflictException('IP conflict')
-      }
-
-      await RefreshTokens.update({ id: token.id }, { isBlacklisted: true })
-
       const payload = { id: verifiedPayload.id, username: verifiedPayload.username, role: verifiedPayload.role };
 
-      return await this.generateTokenPair(payload, ip,res)
+
+      // Generate new tokens using a method that handles refresh scenarios
+      const result = await this.generateTokenPairForRefresh(payload, ip, res)
+
+      // Then blacklist the old token
+      if (token) {
+        await RefreshTokens.update({ id: token.id }, { isBlacklisted: true })
+      }
+
+      return result;
 
     } catch (error) {
-      handleTokenErrors(error)
+      handleTokenErrors(error);
+      throw error; // Re-throw the error after handling
     }
   }
 
   async forgotPassword() { }
 
-  async generateTokenPair(payload: any, ip: string,response) {
+  async generateTokenPair(payload: any, ip: string, response) {
     const access_token = this.jwtService.sign(payload, { expiresIn: '1d', secret: this.configService.get('JWT_SECRET') });
     const refresh_token = this.jwtService.sign(payload, { expiresIn: '2d', secret: this.configService.get('JWT_REFRESH_SECRET'), });
 
+    // Set the new refresh token cookie
     response.cookie('refreshToken', refresh_token, {
       httpOnly: true,
-      secure: true,
-      path: '/auth/refresh',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      secure: false, // false for localhost development
+      sameSite: 'lax', // 'lax' for localhost development
+      path: '/',
     })
 
     await RefreshTokens.insert({ token: refresh_token, ip })
@@ -116,6 +126,43 @@ export class AuthService {
     }
 
   }
+
+  async generateTokenPairForRefresh(payload: any, ip: string, response) {
+    const access_token = this.jwtService.sign(payload, { expiresIn: '1d', secret: this.configService.get('JWT_SECRET') });
+    const refresh_token = this.jwtService.sign(payload, { expiresIn: '2d', secret: this.configService.get('JWT_REFRESH_SECRET'), });
+
+    // Set the new refresh token cookie
+    response.cookie('refreshToken', refresh_token, {
+      httpOnly: true,
+      secure: false, // false for localhost development
+      sameSite: 'lax', // 'lax' for localhost development
+      path: '/',
+    })
+
+
+    // For refresh scenarios, we need to handle potential duplicate tokens more carefully
+    try {
+      await RefreshTokens.insert({ token: refresh_token, ip })
+    } catch (error) {
+      // If we get a duplicate key error, try to update the existing token
+      if (error.code === '23505') { // PostgreSQL unique constraint violation
+        await RefreshTokens.update(
+          { token: refresh_token },
+          { ip, isBlacklisted: false }
+        )
+      } else {
+        throw error
+      }
+    }
+
+    return {
+      access_token,
+      refresh_token
+    }
+
+  }
+
+
 
   verifySocketToken(token: string) {
     try {

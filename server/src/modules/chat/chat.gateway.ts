@@ -69,7 +69,6 @@ export class ChatGateway
 
   async handleConnection(client: any, ...args: any[]) {
     const token_received = client.handshake.headers?.authorization?.split(' ')[1];
-console.log('token_received',token_received);
     try {
       const data = this.authService.verifySocketToken(token_received);
       client.userId = data?.userId;
