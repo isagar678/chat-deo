@@ -69,7 +69,7 @@ export class AuthService {
   async isTokenBlackListed(requestToken) {
     const token = await RefreshTokens.findOne({ where: { token: requestToken } })
 
-    if (token?.isBlacklisted) {
+    if (token && token.isBlacklisted) {
       throw new UnauthorizedException('Blacklisted')
     }
     return token;
@@ -116,6 +116,7 @@ export class AuthService {
       secure: false, // false for localhost development
       sameSite: 'lax', // 'lax' for localhost development
       path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     })
 
     await RefreshTokens.insert({ token: refresh_token, ip })
@@ -137,6 +138,7 @@ export class AuthService {
       secure: false, // false for localhost development
       sameSite: 'lax', // 'lax' for localhost development
       path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     })
 
 
