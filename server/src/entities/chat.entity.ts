@@ -12,11 +12,11 @@ export class Chats extends BaseEntity {
     @CreateDateColumn()
     timeStamp: Date;
 
-    @ManyToOne(() => User, (u) => u.chats, { onDelete: 'CASCADE' })
+    @ManyToOne(() => User, (u) => u.sentChats, { onDelete: 'CASCADE' })
     @JoinColumn([{ name: 'from_id', referencedColumnName: "id" }])
     from: User;
 
-    @ManyToOne(() => User, (u) => u.chats, { onDelete: 'CASCADE' })
+    @ManyToOne(() => User, (u) => u.receivedChats, { onDelete: 'CASCADE' })
     @JoinColumn([{ name: 'to_id', referencedColumnName: "id" }])
     to: User;
 }

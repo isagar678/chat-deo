@@ -1,6 +1,7 @@
 import { Role } from 'src/enum/role.enum';
 import { BaseEntity, Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { Chats } from './chat.entity';
+import { FriendShip } from './friendship.entity';
 
 @Entity({ name: 'users', schema: 'user' })
 export class User extends BaseEntity {
@@ -21,16 +22,19 @@ export class User extends BaseEntity {
 
   @Column('enum', { name: 'role', default: Role.User, enum: Role })
   role: Role
-  
-  @ManyToMany(type=>User)
-  @JoinTable()
-  friends: User[];
 
-  @OneToMany(()=>Chats,(c)=>c.id)
-  chats:Chats[]
+  @OneToMany(type => FriendShip, (friend) => friend.id)
+  friends: FriendShip[];
+
+  @OneToMany(() => Chats, (c) => c.from)
+  sentChats: Chats[];
+
+  @OneToMany(() => Chats, (c) => c.to)
+  receivedChats: Chats[];
+
 
   //for reference
-  
+
   // @ManyToOne(() => Days, (d) => d.activities, { onDelete: 'CASCADE' })
   // @JoinColumn([{ name: "day_id", referencedColumnName: "id" }])
   // day: Days
