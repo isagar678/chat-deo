@@ -35,7 +35,7 @@ export class ChatGateway
   private async sendStatusUpdateToFriends(
     userId: string,
     username: string,
-    status: 'online' | 'offline',
+    isOnline: boolean,
   ) {
     try {
       // 1. Get the list of friends for the user whose status has changed
@@ -54,10 +54,10 @@ export class ChatGateway
           this.io.to(String(friend.id)).emit('userStatusChange', {
             userId: userId, // The user whose status changed (A's ID)
             username: username, // A's username
-            status: status, // 'online' or 'offline'
+            isOnline: true, // 'online' or 'offline'
             timestamp: new Date().toISOString(),
           });
-          this.logger.debug(`Sent status '${status}' for ${username} to friend ${friend.userName} (${friend.id}).`);
+          this.logger.debug(`Sent status '${isOnline}' for ${username} to friend ${friend.userName} (${friend.id}).`);
         }
       }
 
@@ -94,12 +94,12 @@ export class ChatGateway
 
       // --- Send initial status of this user's friends TO this user ---
       // This is for the newly connected client A to know which of THEIR friends are currently online.
-      const friendsOfThisUser =await this.sendStatusUpdateToFriends(client.userId, client.username, 'online');
+      const friendsOfThisUser =await this.sendStatusUpdateToFriends(client.userId, client.username, true);
 
       const initialFriendStatuses = friendsOfThisUser.map(friend => ({
-        userId: friend.id,
-        username: friend.userName,
-        status: onlineUsers.has(friend.id) ? 'online' : 'offline', // Check if friend is in our global onlineUsers map
+        id: friend.id,
+        name: friend.userName,
+        isOnline: onlineUsers.has(friend.id), // Check if friend is in our global onlineUsers map
       }));
       client.emit('initialFriendsStatus', initialFriendStatuses);
       this.logger.debug(`Sent initial status of ${initialFriendStatuses.length} friends to ${client.username}.`);
@@ -129,7 +129,9 @@ export class ChatGateway
     this.logger.log(`Message received from client id: ${client.id}`);
 
     if (recipient) {
-      this.userService.addChat(client.userId,data.recipientId,data.message)
+      await this.userService.addChat(client.userId,data.recipientId,data.message)
+
+      await this.userService.addFriend(client.userId,data.recipientId)
 
       recipient.emit('privateMessageReceived', {
         message: data.message,
