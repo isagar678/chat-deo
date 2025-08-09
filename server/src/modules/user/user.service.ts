@@ -82,14 +82,22 @@ export class UserService {
   }
 
   async getFriendsWithMessages(userId: number): Promise<{}> {
-    // 1️⃣ Find all friendships where this user is involved
-    const friendships = await this.friendshipRepo.find({
-      where: [
-        { userLow: { id: userId } },
-        { userHigh: { id: userId } }
-      ],
-      relations: ["userLow", "userHigh"]
-    });
+    const friendships = await this.friendshipRepo.createQueryBuilder("friendship")
+    .leftJoinAndSelect("friendship.userLow", "userLow")
+    .leftJoinAndSelect("friendship.userHigh", "userHigh")
+    .where("userLow.id = :userId", { userId })
+    .orWhere("userHigh.id = :userId", { userId })
+    .select([
+      "friendship.id",
+      "userLow.id",
+      "userLow.userName",   
+      "userLow.name",     
+      "userHigh.id",
+      "userHigh.userName",     
+      "userHigh.name"     
+    ])
+    .getMany();
+  
 
     const results: FriendWithMessages[] = [];
 
