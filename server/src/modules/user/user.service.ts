@@ -34,12 +34,14 @@ export class UserService {
     });
   }
 
-  async searchUsers(userName): Promise<any> {
+  async searchUsers(userName: string): Promise<any> {
     const foundUsers = await User.createQueryBuilder("user")
-    .select("user.id", "user.userName")
-    .where("(user.userName ILIKE :username)", { username: `%${userName}%` })
-    .limit(5)
-    .getRawMany()    
+    .select(["user.id", "user.userName", "user.name"])
+    .where("(user.userName ILIKE :username OR user.name ILIKE :username)", { username: `%${userName}%` })
+    .limit(10)
+    .getMany();
+    
+    return foundUsers;
   }
 
   async create(userData): Promise<any> {
@@ -143,7 +145,7 @@ export class UserService {
         id: msg.id,
         content: msg.content,
         timestamp: msg.timeStamp,
-        isRead: msg.read,
+        isRead: msg.read || msg.from.id === userId, // Sent messages are always considered "read" by sender
         isSent: msg.from.id === userId
       }));
 

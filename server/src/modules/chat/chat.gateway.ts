@@ -53,9 +53,9 @@ export class ChatGateway
           // 4. Emit the status change event directly to the friend's personal room (which is their userId)
           //    This means only clients who have joined 'friend.id' room will receive it.
           this.io.to(String(friend.id)).emit('userStatusChange', {
-            userId: userId, // The user whose status changed (A's ID)
+            userId: parseInt(userId), // The user whose status changed (A's ID)
             username: username, // A's username
-            isOnline: true, // 'online' or 'offline'
+            isOnline: isOnline, // 'online' or 'offline'
             timestamp: new Date().toISOString(),
           });
           this.logger.debug(`Sent status '${isOnline}' for ${username} to friend ${friend.userName} (${friend.id}).`);
@@ -120,9 +120,14 @@ export class ChatGateway
     this.logger.debug(`Total connected clients: ${this.io.sockets.sockets.size}`);
   }
 
-  handleDisconnect(client: any) {
-    onlineUsers.delete(client.userId)
-    this.logger.log(`Cliend id:${client.id} disconnected`);
+  async handleDisconnect(client: any) {
+    onlineUsers.delete(client.userId);
+    this.logger.log(`Client id:${client.id} disconnected`);
+    
+    // Notify friends about the user going offline
+    if (client.userId && client.username) {
+      await this.sendStatusUpdateToFriends(client.userId, client.username, false);
+    }
   }
 
   @SubscribeMessage('privateMessage')
@@ -131,29 +136,43 @@ export class ChatGateway
     @ConnectedSocket() client,
   ) {
     const recipientSocketId = onlineUsers.get(data.recipientId);
-
-    const recipient = this.io.sockets.sockets.get(String(recipientSocketId))
+    const recipient = this.io.sockets.sockets.get(String(recipientSocketId));
 
     this.logger.log(`Message received from client id: ${client.id}`);
 
-    if (recipient) {
-      await this.userService.addChat(client.userId,data.recipientId,data.message)
+    try {
+      // Always save the chat message first
+      await this.userService.addChat(client.userId, data.recipientId, data.message);
+      
+      // Create friendship relationship (this will create friendship if it doesn't exist)
+      await this.userService.addFriend(client.userId, data.recipientId);
 
-      await this.userService.addFriend(client.userId,data.recipientId)
+      // If recipient is online, send the message immediately
+      if (recipient) {
+        recipient.emit('privateMessageReceived', {
+          message: data.message,
+          from: client.userId,
+          fromName: client.username
+        });
+        this.logger.log(`Message sent to online recipient: ${data.recipientId}`);
+      } else {
+        // If recipient is offline, the message is already saved and will be retrieved when they come online
+        this.logger.log(`Message saved for offline recipient: ${data.recipientId}`);
+      }
 
-      recipient.emit('privateMessageReceived', {
+      // Send confirmation to sender
+      client.emit('messageDelivered', {
+        recipientId: data.recipientId,
         message: data.message,
-        from: client.userId,
-        fromName:client.username
+        timestamp: new Date().toISOString()
       });
 
-    } else {
-      await Chats.insert({
-        read : false,
-        content: data.message,
-        from:client.userId,
-        to: () => String(data.recipientId)
-      })
+    } catch (error) {
+      this.logger.error(`Error sending message: ${error.message}`);
+      client.emit('messageError', {
+        error: 'Failed to send message',
+        recipientId: data.recipientId
+      });
     }
   }
 

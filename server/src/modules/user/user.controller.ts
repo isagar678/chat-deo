@@ -12,12 +12,18 @@ export class UserController {
   @Get('find/person')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('access-token')
-  @ApiOperation({ summary: 'OAuth endpoint' })
+  @ApiOperation({ summary: 'Search users by username or name' })
   @ApiResponse({ status: 200, description: 'Api success' })
   @ApiResponse({ status: 404, description: ' Not found!' })
   @ApiResponse({ status: 500, description: 'Internal server error!' })
-  async searchUsers(@Query() input: string) {
-    return await this.userService.searchUsers(input)
+  async searchUsers(@Query('query') query: string, @CurrentUser() user: User) {
+    if (!query || query.trim().length === 0) {
+      return [];
+    }
+    
+    const users = await this.userService.searchUsers(query.trim());
+    // Filter out the current user from search results
+    return users.filter(foundUser => foundUser.id !== user.id);
   }
 
   @Get('my/friends')
