@@ -34,8 +34,12 @@ export class UserService {
     });
   }
 
-  async searchUsers(userName): Promise<User[] | null> {
-    return await User.createQueryBuilder("user").select("user.id", "user.userName").where("(user.userName ILIKE :username)", { username: `%${userName}%` }).getRawMany()
+  async searchUsers(userName): Promise<any> {
+    const foundUsers = await User.createQueryBuilder("user")
+    .select("user.id", "user.userName")
+    .where("(user.userName ILIKE :username)", { username: `%${userName}%` })
+    .limit(5)
+    .getRawMany()    
   }
 
   async create(userData): Promise<any> {
@@ -81,23 +85,39 @@ export class UserService {
       .execute()
   }
 
+  async getAllUnreadMessages(userId) {
+    return await this.chatsRepo
+    .createQueryBuilder("chat")
+    .select(["chat.id", "chat.content","chat.from"])
+    .where("chat.read = :read", { read: false })
+    .andWhere("chat.to= :userId", { userId })
+    .getMany();  
+  }
+
+  async markMessagesAsRead(from, to) {
+    return await this.chatsRepo.update(
+      { from, to },         
+      { read: true } 
+    );
+  }
+  
   async getFriendsWithMessages(userId: number): Promise<{}> {
     const friendships = await this.friendshipRepo.createQueryBuilder("friendship")
-    .leftJoinAndSelect("friendship.userLow", "userLow")
-    .leftJoinAndSelect("friendship.userHigh", "userHigh")
-    .where("userLow.id = :userId", { userId })
-    .orWhere("userHigh.id = :userId", { userId })
-    .select([
-      "friendship.id",
-      "userLow.id",
-      "userLow.userName",   
-      "userLow.name",     
-      "userHigh.id",
-      "userHigh.userName",     
-      "userHigh.name"     
-    ])
-    .getMany();
-  
+      .leftJoinAndSelect("friendship.userLow", "userLow")
+      .leftJoinAndSelect("friendship.userHigh", "userHigh")
+      .where("userLow.id = :userId", { userId })
+      .orWhere("userHigh.id = :userId", { userId })
+      .select([
+        "friendship.id",
+        "userLow.id",
+        "userLow.userName",
+        "userLow.name",
+        "userHigh.id",
+        "userHigh.userName",
+        "userHigh.name"
+      ])
+      .getMany();
+
 
     const results: FriendWithMessages[] = [];
 
@@ -123,6 +143,7 @@ export class UserService {
         id: msg.id,
         content: msg.content,
         timestamp: msg.timeStamp,
+        isRead: msg.read,
         isSent: msg.from.id === userId
       }));
 

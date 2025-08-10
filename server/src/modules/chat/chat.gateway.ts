@@ -13,6 +13,7 @@ import {
 import { Server } from 'socket.io';
 import { AuthService } from 'src/modules/auth/auth.service';
 import { UserService } from '../user/user.service';
+import { Chats } from 'src/entities/chat.entity';
 
 const onlineUsers = new Map() //<user id, client id>
 
@@ -104,7 +105,14 @@ export class ChatGateway
       client.emit('initialFriendsStatus', initialFriendStatuses);
       this.logger.debug(`Sent initial status of ${initialFriendStatuses.length} friends to ${client.username}.`);
 
+      const allUnreadMessages = await this.userService.getAllUnreadMessages(client.userId)
 
+      allUnreadMessages.forEach((msg)=>{
+        client.emit('privateMessageReceived', {
+          message: msg.content,
+          from: msg.from,
+        });
+      })
     } catch (err) {
       this.logger.error(`Error occured for user id ${client.userId}`);
       client.disconnect();
@@ -136,12 +144,47 @@ export class ChatGateway
       recipient.emit('privateMessageReceived', {
         message: data.message,
         from: client.userId,
+        fromName:client.username
       });
 
     } else {
-      client.emit('privateMessageReceived', {
-        message: 'wrong recepient',
-        from: client.id,
+      await Chats.insert({
+        read : false,
+        content: data.message,
+        from:client.userId,
+        to: () => String(data.recipientId)
+      })
+    }
+  }
+
+  @SubscribeMessage('typingStart')
+  async handleTypingStart(
+    @MessageBody() data: { to: string },
+    @ConnectedSocket() client,
+  ) {
+    const recipientSocketId = onlineUsers.get(data.to);
+    const recipient = this.io.sockets.sockets.get(String(recipientSocketId));
+
+    if (recipient) {
+      recipient.emit('typingStart', {
+        from: client.userId,
+        fromName: client.username
+      });
+    }
+  }
+
+  @SubscribeMessage('typingStop')
+  async handleTypingStop(
+    @MessageBody() data: { to: string },
+    @ConnectedSocket() client,
+  ) {
+    const recipientSocketId = onlineUsers.get(data.to);
+    const recipient = this.io.sockets.sockets.get(String(recipientSocketId));
+
+    if (recipient) {
+      recipient.emit('typingStop', {
+        from: client.userId,
+        fromName: client.username
       });
     }
   }

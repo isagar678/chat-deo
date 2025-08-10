@@ -3,7 +3,7 @@ import { BaseEntity, Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGe
 import { Chats } from './chat.entity';
 import { FriendShip } from './friendship.entity';
 
-@Entity({ name: 'users', schema: 'user' })
+@Entity({ name: 'users'})
 export class User extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;

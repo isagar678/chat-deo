@@ -1,7 +1,7 @@
 import { BaseEntity, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, Unique } from "typeorm";
 import { User } from "./user.entity";
 
-@Entity({ name: 'friendship', schema: 'user' })
+@Entity({ name: 'friendship' })
 @Unique('uq_friend_pair', ['userLow', 'userHigh'])
 export class FriendShip extends BaseEntity {
     @PrimaryGeneratedColumn()
