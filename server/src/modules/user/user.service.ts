@@ -50,7 +50,7 @@ export class UserService {
 
   async getFriendsOfUser(userId): Promise<any> {
 
-    const chats = await Chats.createQueryBuilder('chat')
+    const chats = await this.chatsRepo.createQueryBuilder('chat')
       .leftJoinAndSelect("chat.from", "from")
       .leftJoinAndSelect("chat.to", "to")
       .select(['chat.id', 'from.id', 'to.id'])
@@ -72,7 +72,7 @@ export class UserService {
   }
 
   async addChat(from, to, content) {
-    await Chats.insert({ from, to, content })
+    await this.chatsRepo.insert({ from, to, content })
   }
 
   async addFriend(userA, userB) {
@@ -143,7 +143,7 @@ export class UserService {
       // 4️⃣ Map messages to the required format
       const formattedMessages = messages.map(msg => ({
         id: msg.id,
-        content: msg.content,
+        content: msg.content ?? '',
         timestamp: msg.timeStamp,
         isRead: msg.read || msg.from.id === userId, // Sent messages are always considered "read" by sender
         isSent: msg.from.id === userId
