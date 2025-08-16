@@ -73,14 +73,17 @@ export class AuthService {
   }
 
   async googleRegister(userData, ip, res) {
-    const user = await this.userService.findUser(userData);
+    let user = await this.userService.findUser(userData);
 
     if (!user) {
-      await this.userService.create(userData);
+      user = await this.userService.create(userData);
     }
 
-    const payload = { username: userData.userName, id: userData.id, role: Role.User };
-
+    if (!user) {
+      throw new Error('Failed to create or find user');
+    }
+    
+    const payload = { username: user.userName, id: user.id, role: Role.User };
     return await this.generateTokenPair(payload, ip, res)
   }
 

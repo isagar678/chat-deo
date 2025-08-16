@@ -125,9 +125,10 @@ export class AuthController {
     @Ip() ip: string
   ) {
     const data = await this.authService.googleRegister(user,ip,res);
-    res.cookie('access_token', data.access_token)
-    res.cookie('refresh_token', data.refresh_token)
-    res.redirect('http://localhost:3000/api');
+    
+    const redirectUrl = `http://localhost:5173/api?access_token=${data.access_token}`;
+    console.log('Redirecting to frontend with access token');
+    res.redirect(redirectUrl);
   }
 
   @Get('admin/route/test')
