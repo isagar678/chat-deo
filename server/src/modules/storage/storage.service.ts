@@ -23,7 +23,7 @@ export class StorageService {
     bucket: string,
     senderId: string,
     recipientId: string,
-  ): Promise<string> {
+  ): Promise<{ path: string; url: string }> {
     // Create a unique file path to avoid name collisions.
     const filePath = `${senderId}/${Date.now()}-${file.originalname}`;
 
@@ -35,6 +35,8 @@ export class StorageService {
         metadata: {
           senderId,
           recipientId,
+          originalName: file.originalname,
+          size: file.size,
         },
       });
 
@@ -42,6 +44,51 @@ export class StorageService {
       throw new Error(`Failed to upload file to Supabase: ${error.message}`);
     }
 
-    return data.path;
+    // Get the public URL for the uploaded file
+    const { data: urlData } = this.supabase.storage
+      .from(bucket)
+      .getPublicUrl(data.path);
+
+    return {
+      path: data.path,
+      url: urlData.publicUrl,
+    };
+  }
+
+  /**
+   * Gets a signed URL for file download (for private files)
+   * @param bucket The bucket name
+   * @param filePath The file path in the bucket
+   * @param expiresIn Expiration time in seconds (default: 3600 = 1 hour)
+   * @returns Signed URL for file download
+   */
+  public async getSignedUrl(
+    bucket: string,
+    filePath: string,
+    expiresIn: number = 3600,
+  ): Promise<string> {
+    const { data, error } = await this.supabase.storage
+      .from(bucket)
+      .createSignedUrl(filePath, expiresIn);
+
+    if (error) {
+      throw new Error(`Failed to create signed URL: ${error.message}`);
+    }
+
+    return data.signedUrl;
+  }
+
+  /**
+   * Gets the public URL for a file (for public files)
+   * @param bucket The bucket name
+   * @param filePath The file path in the bucket
+   * @returns Public URL for the file
+   */
+  public getPublicUrl(bucket: string, filePath: string): string {
+    const { data } = this.supabase.storage
+      .from(bucket)
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
   }
 }

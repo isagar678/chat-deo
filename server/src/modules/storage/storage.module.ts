@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 import { StorageService } from './storage.service';
 import { ConfigModule } from '@nestjs/config';
-import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseProvider } from './storage.provider';
 
 @Module({
-  imports:[ConfigModule,SupabaseClient],
+  imports: [ConfigModule],
   controllers: [],
-  providers: [StorageService,SupabaseClient],
+  providers: [StorageService, SupabaseProvider],
+  exports: [StorageService],
 })
 export class StorageModule {}
