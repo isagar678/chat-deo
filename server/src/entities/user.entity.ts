@@ -3,7 +3,7 @@ import { BaseEntity, Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGe
 import { Chats } from './chat.entity';
 import { FriendShip } from './friendship.entity';
 
-@Entity({ name: 'users'})
+@Entity({ name: 'users' })
 export class User extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
@@ -14,6 +14,9 @@ export class User extends BaseEntity {
   @Column('text', { name: 'user_name' })
   userName: string;
 
+  @Column({ name: 'supabase_auth_id', type: 'uuid', unique: true, nullable: true })
+  supabaseAuthId: string; 
+  
   @Column('text', { name: 'email' })
   email: string;
 

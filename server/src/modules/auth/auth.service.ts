@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+// import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { UserService } from 'src/modules/user/user.service';
 import { RefreshTokens } from '../../entities/refreshToken.entity';
 import { ConfigService } from '@nestjs/config';
@@ -13,11 +14,19 @@ import { Response } from 'express';
 
 @Injectable()
 export class AuthService {
+  
   constructor(
+    // private readonly supabaseAdmin: SupabaseClient,
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService
-  ) { }
+  ) {
+    // this.supabaseAdmin = createClient(
+    //   process.env.SUPABASE_URL || '',
+    //   process.env.SUPABASE_SERVICE_ROLE_KEY || '', 
+    //   { auth: { persistSession: false } }
+    // );
+   }
 
   async validateUser(username: string, password: string): Promise<any> {
     const user = await this.userService.findOne(username);
@@ -31,7 +40,7 @@ export class AuthService {
   async login(user: any, ip, res: Response) {
     try {
 
-      const payload = { username: user.userName, id: user.id, role: Role.User };
+      const payload = { username: user.userName, id: user.id, role: Role.User, sub:user.supabaseAuthId };
       return await this.generateTokenPair(payload, ip, res)
 
     } catch (error) {
@@ -41,11 +50,20 @@ export class AuthService {
 
   async register(userData, ip, res: Response) {
     const user = await this.userService.findUser(userData);
-
     if (!user) {
+      // const { data: authData, error: authError } = await this.supabaseAdmin.auth.admin.createUser({
+      //   ...userData
+      // });
+
+      // if (authError) {
+      //   throw new Error(`Supabase auth error: ${authError.message}`);
+      // }
+
+      // userData.supabaseAuthId = authData.user.id;
+
       await this.userService.create(userData);
 
-      const payload = { username: userData.userName, id: userData.id, role: Role.Admin };
+      const payload = { username: userData.userName, id: userData.id, role: Role.Admin,sub:userData.supabaseAuthId };
 
       return await this.generateTokenPair(payload, ip, res)
 
@@ -85,7 +103,7 @@ export class AuthService {
 
       const token = await this.isTokenBlackListed(refreshToken)
 
-      const payload = { id: verifiedPayload.id, username: verifiedPayload.username, role: verifiedPayload.role };
+      const payload = { id: verifiedPayload.id, username: verifiedPayload.username, role: verifiedPayload.role,sub:verifiedPayload.sub };
 
 
       // Generate new tokens using a method that handles refresh scenarios
@@ -100,7 +118,7 @@ export class AuthService {
 
     } catch (error) {
       handleTokenErrors(error);
-      throw error; // Re-throw the error after handling
+      throw error; 
     }
   }
 
@@ -164,8 +182,6 @@ export class AuthService {
 
   }
 
-
-
   verifySocketToken(token: string) {
     try {
       const payload = this.jwtService.verify(token, { secret: this.configService.get('JWT_SECRET') });
@@ -174,5 +190,4 @@ export class AuthService {
       handleTokenErrors(error)
     }
   }
-
 }

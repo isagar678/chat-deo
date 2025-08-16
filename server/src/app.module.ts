@@ -7,6 +7,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ChatGateway } from './modules/chat/chat.gateway';
+import { StorageModule } from './modules/storage/storage.module';
 
 @Module({
   imports: [
@@ -44,6 +45,9 @@ import { ChatGateway } from './modules/chat/chat.gateway';
     // }),
 
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
+    
+
+    StorageModule,
   ],
   controllers: [AppController],
   providers: [AppService, ChatGateway],
