@@ -71,8 +71,16 @@ export class UserService {
     return Array.from(friendsSet);
   }
 
-  async addChat(from, to, content) {
-    await this.chatsRepo.insert({ from, to, content })
+  async addChat(from, to, content, filePath?: string, fileName?: string, fileSize?: number, mimeType?: string) {
+    await this.chatsRepo.insert({ 
+      from, 
+      to, 
+      content,
+      filePath,
+      fileName,
+      fileSize,
+      mimeType
+    })
   }
 
   async addFriend(userA, userB) {
@@ -90,7 +98,15 @@ export class UserService {
   async getAllUnreadMessages(userId) {
     return await this.chatsRepo
     .createQueryBuilder("chat")
-    .select(["chat.id", "chat.content","chat.from"])
+    .select([
+      "chat.id", 
+      "chat.content",
+      "chat.from",
+      "chat.filePath",
+      "chat.fileName",
+      "chat.fileSize",
+      "chat.mimeType"
+    ])
     .where("chat.read = :read", { read: false })
     .andWhere("chat.to= :userId", { userId })
     .getMany();  
@@ -146,7 +162,11 @@ export class UserService {
         content: msg.content ?? '',
         timestamp: msg.timeStamp,
         isRead: msg.read || msg.from.id === userId, // Sent messages are always considered "read" by sender
-        isSent: msg.from.id === userId
+        isSent: msg.from.id === userId,
+        filePath: msg.filePath,
+        fileName: msg.fileName,
+        fileSize: msg.fileSize,
+        mimeType: msg.mimeType
       }));
 
       // 5️⃣ Push result

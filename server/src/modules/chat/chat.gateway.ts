@@ -111,6 +111,10 @@ export class ChatGateway
         client.emit('privateMessageReceived', {
           message: msg.content,
           from: msg.from,
+          filePath: msg.filePath,
+          fileName: msg.fileName,
+          fileSize: msg.fileSize,
+          fileType: msg.mimeType
         });
       })
     } catch (err) {
@@ -132,7 +136,14 @@ export class ChatGateway
 
   @SubscribeMessage('privateMessage')
   async sendPrivateMessage(
-    @MessageBody() data: { recipientId: string; message: string },
+    @MessageBody() data: { 
+      recipientId: string; 
+      message: string; 
+      filePath?: string; 
+      fileName?: string; 
+      fileSize?: number; 
+      fileType?: string; 
+    },
     @ConnectedSocket() client,
   ) {
     const recipientSocketId = onlineUsers.get(data.recipientId);
@@ -141,8 +152,16 @@ export class ChatGateway
     this.logger.log(`Message received from client id: ${client.id}`);
 
     try {
-      // Always save the chat message first
-      await this.userService.addChat(client.userId, data.recipientId, data.message);
+      // Always save the chat message first with file metadata
+      await this.userService.addChat(
+        client.userId, 
+        data.recipientId, 
+        data.message,
+        data.filePath,
+        data.fileName,
+        data.fileSize,
+        data.fileType
+      );
       
       // Create friendship relationship (this will create friendship if it doesn't exist)
       await this.userService.addFriend(client.userId, data.recipientId);
@@ -152,7 +171,11 @@ export class ChatGateway
         recipient.emit('privateMessageReceived', {
           message: data.message,
           from: client.userId,
-          fromName: client.username
+          fromName: client.username,
+          filePath: data.filePath,
+          fileName: data.fileName,
+          fileSize: data.fileSize,
+          fileType: data.fileType
         });
         this.logger.log(`Message sent to online recipient: ${data.recipientId}`);
       } else {
@@ -164,7 +187,11 @@ export class ChatGateway
       client.emit('messageDelivered', {
         recipientId: data.recipientId,
         message: data.message,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        filePath: data.filePath,
+        fileName: data.fileName,
+        fileSize: data.fileSize,
+        fileType: data.fileType
       });
 
     } catch (error) {

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Put, Query, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Post, Put, Query, Req, UploadedFile, UseGuards, UseInterceptors, Param } from '@nestjs/common';
 import { UserService } from './user.service';
 import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
@@ -64,13 +64,39 @@ export class UserController {
   ) {
     const senderId = req.user.sub;
 
-    const path = await this.storageService.upload(
+    const uploadResult = await this.storageService.upload(
       file,
       'chat-nest-file-bucket',
       senderId,
       recipientId,
     );
 
-    return { filePath: path, fileType: file.mimetype };
+    return { 
+      filePath: uploadResult.path, 
+      fileUrl: uploadResult.url,
+      fileName: file.originalname,
+      fileType: file.mimetype,
+      fileSize: file.size
+    };
+  }
+
+  @Get('file/:filePath')
+  @UseGuards(JwtAuthGuard)
+  async getFileUrl(
+    @Param('filePath') filePath: string,
+    @Req() req: any,
+  ) {
+    try {
+      // Create a signed URL for secure file access
+      const signedUrl = await this.storageService.getSignedUrl(
+        'chat-nest-file-bucket',
+        filePath,
+        3600 // 1 hour expiration
+      );
+      
+      return { url: signedUrl };
+    } catch (error) {
+      throw new Error(`Failed to get file URL: ${error.message}`);
+    }
   }
 }
