@@ -28,6 +28,22 @@ export class UserService {
     return await this.userRepository.findOne({ where: { userName } });
   }
 
+  async testAvatarColumn(): Promise<any> {
+    try {
+      // Test if avatar column exists by trying to select it
+      const result = await this.userRepository.createQueryBuilder('user')
+        .select(['user.id', 'user.name', 'user.userName', 'user.avatar'])
+        .limit(5)
+        .getMany();
+      
+      console.log('Test avatar column result:', JSON.stringify(result, null, 2));
+      return result;
+    } catch (error) {
+      console.error('Error testing avatar column:', error);
+      throw error;
+    }
+  }
+
   async findUser(userData): Promise<User | null> {
     return await this.userRepository.findOne({
       where: [{ userName: userData.userName }, { email: userData.email }],
@@ -36,7 +52,7 @@ export class UserService {
 
   async searchUsers(userName: string): Promise<any> {
     const foundUsers = await User.createQueryBuilder("user")
-    .select(["user.id", "user.userName", "user.name"])
+    .select(["user.id", "user.userName", "user.name", "user.avatar"])
     .where("(user.userName ILIKE :username OR user.name ILIKE :username)", { username: `%${userName}%` })
     .limit(10)
     .getMany();
@@ -118,6 +134,24 @@ export class UserService {
       { read: true } 
     );
   }
+
+  async updateAvatar(userId: number, avatarUrl?: string): Promise<User> {
+    try {
+      const updateData = avatarUrl ? { avatar: avatarUrl } : { avatar: undefined };
+      
+      await this.userRepository.update(userId, updateData);
+      
+      const updatedUser = await this.userRepository.findOne({ where: { id: userId } });
+      if (!updatedUser) {
+        throw new Error('User not found after update');
+      }
+      
+      return updatedUser;
+    } catch (error) {
+      console.error('Error updating user avatar:', error);
+      throw new Error(`Failed to update user avatar: ${error.message}`);
+    }
+  }
   
   async getFriendsWithMessages(userId: number): Promise<{}> {
     const friendships = await this.friendshipRepo.createQueryBuilder("friendship")
@@ -125,16 +159,9 @@ export class UserService {
       .leftJoinAndSelect("friendship.userHigh", "userHigh")
       .where("userLow.id = :userId", { userId })
       .orWhere("userHigh.id = :userId", { userId })
-      .select([
-        "friendship.id",
-        "userLow.id",
-        "userLow.userName",
-        "userLow.name",
-        "userHigh.id",
-        "userHigh.userName",
-        "userHigh.name"
-      ])
       .getMany();
+
+
 
 
     const results: FriendWithMessages[] = [];
