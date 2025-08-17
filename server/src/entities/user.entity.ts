@@ -23,6 +23,9 @@ export class User extends BaseEntity {
   @Column('text', { name: 'password', nullable: true })
   password: string;
 
+  @Column('text', { name: 'avatar', nullable: true })
+  avatar: string;
+
   @Column('enum', { name: 'role', default: Role.User, enum: Role })
   role: Role
 
