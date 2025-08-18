@@ -143,6 +143,7 @@ export class ChatGateway
       fileName?: string; 
       fileSize?: number; 
       fileType?: string; 
+      clientMessageId?: number;
     },
     @ConnectedSocket() client,
   ) {
@@ -183,11 +184,12 @@ export class ChatGateway
         this.logger.log(`Message saved for offline recipient: ${data.recipientId}`);
       }
 
-      // Send confirmation to sender
+      // Send confirmation to sender (delivered)
       client.emit('messageDelivered', {
         recipientId: data.recipientId,
         message: data.message,
         timestamp: new Date().toISOString(),
+        clientMessageId: data.clientMessageId,
         filePath: data.filePath,
         fileName: data.fileName,
         fileSize: data.fileSize,
@@ -200,6 +202,26 @@ export class ChatGateway
         error: 'Failed to send message',
         recipientId: data.recipientId
       });
+    }
+  }
+
+  @SubscribeMessage('markMessagesRead')
+  async markMessagesRead(
+    @MessageBody() data: { from: string },
+    @ConnectedSocket() client,
+  ) {
+    try {
+      // Persist read status in DB
+      await this.userService.markMessagesAsRead(data.from, client.userId);
+
+      // Notify sender that their messages were read
+      const senderSocketId = onlineUsers.get(data.from);
+      const sender = this.io.sockets.sockets.get(String(senderSocketId));
+      if (sender) {
+        sender.emit('messagesRead', { from: client.userId });
+      }
+    } catch (error) {
+      this.logger.error(`Error marking messages as read: ${error.message}`);
     }
   }
 
