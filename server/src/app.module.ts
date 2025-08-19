@@ -8,6 +8,7 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ChatGateway } from './modules/chat/chat.gateway';
 import { StorageModule } from './modules/storage/storage.module';
+import { AiModule } from './modules/ai/ai.module';
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { StorageModule } from './modules/storage/storage.module';
     
 
     StorageModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [AppService, ChatGateway],
