@@ -153,6 +153,45 @@ export class UserService {
     }
   }
   
+  async findById(userId: number): Promise<User | null> {
+    return await this.userRepository.findOne({ where: { id: userId } });
+  }
+  
+  async updateProfile(userId: number, updates: { name?: string }): Promise<Pick<User, 'id' | 'name' | 'userName' | 'email' | 'avatar' | 'role'>> {
+    const payload: Partial<User> = {};
+    if (typeof updates.name === 'string' && updates.name.trim().length > 0) {
+      payload.name = updates.name.trim();
+    }
+    if (Object.keys(payload).length === 0) {
+      // Nothing to update; return current public fields
+      const current = await this.userRepository.findOne({ where: { id: userId } });
+      if (!current) {
+        throw new Error('User not found');
+      }
+      return {
+        id: current.id,
+        name: current.name,
+        userName: current.userName,
+        email: current.email,
+        avatar: current.avatar,
+        role: current.role,
+      };
+    }
+    await this.userRepository.update(userId, payload);
+    const updated = await this.userRepository.findOne({ where: { id: userId } });
+    if (!updated) {
+      throw new Error('User not found after update');
+    }
+    return {
+      id: updated.id,
+      name: updated.name,
+      userName: updated.userName,
+      email: updated.email,
+      avatar: updated.avatar,
+      role: updated.role,
+    };
+  }
+  
   async getFriendsWithMessages(userId: number): Promise<{}> {
     const friendships = await this.friendshipRepo.createQueryBuilder("friendship")
       .leftJoinAndSelect("friendship.userLow", "userLow")

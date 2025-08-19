@@ -150,6 +150,19 @@ export class UserController {
     return await this.userService.getFriendsWithMessages(user.id);
   }
 
+  @Put('profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Update current user profile (name only)' })
+  @ApiResponse({ status: 200, description: 'Profile updated' })
+  async updateMyProfile(
+    @CurrentUser() user: User,
+    @Body() body: { name?: string }
+  ) {
+    const { name } = body;
+    return await this.userService.updateProfile(user.id, { name });
+  }
+
   @Put('mark/read')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('access-token')
