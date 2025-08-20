@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../../entities/user.entity';
 import { Repository } from 'typeorm';
 import { Chats } from 'src/entities/chat.entity';
 import { FriendShip } from 'src/entities/friendship.entity';
+import { GroupService } from '../group/group.service';
 
 interface FriendWithMessages {
   friendDetails: User;
@@ -21,7 +22,9 @@ export class UserService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     @InjectRepository(FriendShip) private readonly friendshipRepo: Repository<FriendShip>,
-    @InjectRepository(Chats) private readonly chatsRepo: Repository<Chats>
+    @InjectRepository(Chats) private readonly chatsRepo: Repository<Chats>,
+    @Inject(forwardRef(() => GroupService))
+    private readonly groupService: GroupService
   ) { }
 
   async findOne(userName: string): Promise<User | null> {
@@ -88,15 +91,24 @@ export class UserService {
   }
 
   async addChat(from, to, content, filePath?: string, fileName?: string, fileSize?: number, mimeType?: string, groupId?: number) {
-    await this.chatsRepo.insert({ 
+    const chatData: any = { 
       from, 
-      to, 
       content,
       filePath,
       fileName,
       fileSize,
       mimeType
-    })
+    };
+
+    if (groupId) {
+      // Group message
+      chatData.group = groupId;
+    } else {
+      // Private message
+      chatData.to = to;
+    }
+
+    await this.chatsRepo.insert(chatData);
   }
 
   async addFriend(userA, userB) {
@@ -128,9 +140,71 @@ export class UserService {
     .getMany();  
   }
 
+  async getAllUnreadGroupMessages(userId) {
+    // Get all groups the user is a member of
+    const userGroups = await this.groupService.getGroupsByUserId(userId);
+    if (!userGroups || userGroups.length === 0) {
+      return [];
+    }
+
+    const groupIds = userGroups.map(group => group.id);
+    
+    return await this.chatsRepo
+    .createQueryBuilder("chat")
+    .leftJoinAndSelect("chat.group", "group")
+    .select([
+      "chat.id", 
+      "chat.content",
+      "chat.from",
+      "chat.filePath",
+      "chat.fileName",
+      "chat.fileSize",
+      "chat.mimeType",
+      "group.id"
+    ])
+    .where("chat.read = :read", { read: false })
+    .andWhere("group.id IN (:...groupIds)", { groupIds })
+    .getMany();  
+  }
+
+  async getGroupMessages(groupId: number, limit: number = 50, offset: number = 0) {
+    return await this.chatsRepo
+    .createQueryBuilder("chat")
+    .leftJoinAndSelect("chat.from", "from")
+    .leftJoinAndSelect("chat.group", "group")
+    .select([
+      "chat.id", 
+      "chat.content",
+      "chat.timeStamp",
+      "chat.read",
+      "chat.filePath",
+      "chat.fileName",
+      "chat.fileSize",
+      "chat.mimeType",
+      "from.id",
+      "from.name",
+      "from.userName",
+      "from.avatar",
+      "group.id",
+      "group.name"
+    ])
+    .where("group.id = :groupId", { groupId })
+    .orderBy("chat.timeStamp", "DESC")
+    .limit(limit)
+    .offset(offset)
+    .getMany();
+  }
+
   async markMessagesAsRead(from, to) {
     return await this.chatsRepo.update(
       { from, to },         
+      { read: true } 
+    );
+  }
+
+  async markGroupMessagesAsRead(groupId: number, userId: number) {
+    return await this.chatsRepo.update(
+      { group: { id: groupId } },         
       { read: true } 
     );
   }
