@@ -119,7 +119,7 @@ export class ChatGateway
           fileType: msg.mimeType
         });
       })
-      
+
       await this.handleGroupConnection(client)
 
     } catch (err) {
@@ -131,18 +131,21 @@ export class ChatGateway
 
   async handleGroupConnection(client: any, ...args: any[]) {
     try {
-      const group = await this.groupService.getGroupsByUserId(client.userId);
+      const groups = await this.groupService.getGroupsByUserId(client.userId);
 
-      if(group){
-        group.forEach(group=>{
+      if (groups && groups.length > 0) {
+        groups.forEach(group => {
           client.join(group.id.toString());
-        })
+          this.logger.debug(`User ${client.username} joined group ${group.name} (${group.id})`);
+        });
+        this.logger.debug(`User ${client.username} joined ${groups.length} groups`);
+      } else {
+        this.logger.debug(`User ${client.username} is not a member of any groups`);
       }
     } catch (err) {
-      this.logger.error(`Error occured for group joining of user ${client.username} (${client.userId})`);
-      client.disconnect();
+      this.logger.error(`Error occurred for group joining of user ${client.username} (${client.userId}): ${err.message}`);
+      // Don't disconnect the client for group errors, just log them
     }
-    this.logger.debug(`Total connected clients: ${this.io.sockets.sockets.size}`);
   }
 
   async handleDisconnect(client: any) {
@@ -167,21 +170,49 @@ export class ChatGateway
     },
     @ConnectedSocket() client,
   ){
-    if (client.rooms.has(data?.groupId.toString())) {
+    try {
+      // Check if user is in the group
+      const isUserInGroup = await this.groupService.isUserInGroup(data.groupId, client.userId);
+      
+      if (!isUserInGroup) {
+        client.emit('groupMessageError', {
+          error: 'You are not a member of this group',
+          groupId: data.groupId
+        });
+        return;
+      }
+
+      // Save the group message
       await this.userService.addChat(
         client.userId, 
-        data.groupId, 
+        null, // to is null for group messages
         data.message,
         data.filePath,
         data.fileName,
         data.fileSize,
-        data.fileType
+        data.fileType,
+        data.groupId // Pass groupId as the last parameter
       );
 
+      // Emit to all group members
       this.io.to(data.groupId.toString()).emit('groupMessageReceived', {
         message: data.message,
         from: client.userId,
+        fromName: client.username,
         groupId: data.groupId,
+        filePath: data.filePath,
+        fileName: data.fileName,
+        fileSize: data.fileSize,
+        fileType: data.fileType,
+        timestamp: new Date().toISOString()
+      });
+
+      this.logger.log(`Group message sent to group ${data.groupId} by ${client.username}`);
+    } catch (error) {
+      this.logger.error(`Error sending group message: ${error.message}`);
+      client.emit('groupMessageError', {
+        error: 'Failed to send group message',
+        groupId: data.groupId
       });
     }
   }
@@ -277,6 +308,36 @@ export class ChatGateway
     }
   }
 
+  @SubscribeMessage('markGroupMessagesRead')
+  async markGroupMessagesRead(
+    @MessageBody() data: { groupId: number },
+    @ConnectedSocket() client,
+  ) {
+    try {
+      // Check if user is in the group
+      const isUserInGroup = await this.groupService.isUserInGroup(data.groupId, client.userId);
+      
+      if (!isUserInGroup) {
+        client.emit('groupMessageError', {
+          error: 'You are not a member of this group',
+          groupId: data.groupId
+        });
+        return;
+      }
+
+      // Persist read status in DB
+      await this.userService.markGroupMessagesAsRead(data.groupId, client.userId);
+
+      // Notify all group members that messages were read
+      this.io.to(data.groupId.toString()).emit('groupMessagesRead', { 
+        groupId: data.groupId,
+        readBy: client.userId 
+      });
+    } catch (error) {
+      this.logger.error(`Error marking group messages as read: ${error.message}`);
+    }
+  }
+
   @SubscribeMessage('typingStart')
   async handleTypingStart(
     @MessageBody() data: { to: string },
@@ -307,5 +368,24 @@ export class ChatGateway
         fromName: client.username
       });
     }
+  }
+
+  @SubscribeMessage('joinGroup')
+  handleJoinGroup(
+    @MessageBody() data: { groupId: string },
+    @ConnectedSocket() client,
+  ) {
+    // Check if the client's rooms Set already has the groupId
+    if (client.rooms.has(data.groupId)) {
+      console.log(`Client ${client.id} is ALREADY in group ${data.groupId}`);
+      return; // Or emit a message back saying they're already joined
+    }
+
+    // If not, join the group
+    client.join(data.groupId);
+    console.log(`Client ${client.id} successfully JOINED group ${data.groupId}`);
+    
+    // You might want to emit a success message back to the client
+    client.emit('joinedGroupSuccess', { groupId: data.groupId });
   }
 }
