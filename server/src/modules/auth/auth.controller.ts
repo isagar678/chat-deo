@@ -28,10 +28,14 @@ import { Role } from 'src/enum/role.enum';
 import { RolesGuard } from './guard/roles.guard';
 import { CurrentUser } from 'src/decorators/currentUser.decorator';
 import { User } from 'src/entities/user.entity';
+import { ConfigService } from '@nestjs/config';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) { }
 
   @Post('login')
   @UseGuards(LocalAuthGuard)
@@ -42,8 +46,8 @@ export class AuthController {
   @ApiResponse({ status: 404, description: 'Not found!' })
   @ApiResponse({ status: 409, description: 'User Already Exist' })
   @ApiResponse({ status: 500, description: 'Internal server error!' })
-  async login(@Res({ passthrough: true }) res: Response,@CurrentUser() user: User,@Ip() ip:string) {
-    return await this.authService.login(user,ip,res);
+  async login(@Res({ passthrough: true }) res: Response, @CurrentUser() user: User, @Ip() ip: string) {
+    return await this.authService.login(user, ip, res);
   }
 
   @Post('register')
@@ -54,8 +58,8 @@ export class AuthController {
   @ApiResponse({ status: 404, description: 'Not found!' })
   @ApiResponse({ status: 409, description: 'User Already Exist' })
   @ApiResponse({ status: 500, description: 'Internal server error!' })
-  async register(@Res({ passthrough: true }) res: Response,@Body(ValidationPipe) userData: RegisterDto,@Ip() ip:string) {
-    return await this.authService.register(userData,ip,res);
+  async register(@Res({ passthrough: true }) res: Response, @Body(ValidationPipe) userData: RegisterDto, @Ip() ip: string) {
+    return await this.authService.register(userData, ip, res);
   }
 
   @Post('token')
@@ -65,7 +69,7 @@ export class AuthController {
   @ApiResponse({ status: 422, description: 'Bad Request or API error message' })
   @ApiResponse({ status: 404, description: 'Not found!' })
   @ApiResponse({ status: 500, description: 'Internal server error!' })
-  async getAccessToken(@Req() request: Request,@Res({ passthrough: true }) res: Response,@Ip() ip: string) {
+  async getAccessToken(@Req() request: Request, @Res({ passthrough: true }) res: Response, @Ip() ip: string) {
     try {
       const result = await this.authService.generateAccessTokenFromRefreshToken(request.cookies?.['refreshToken'], ip, res);
       return result;
@@ -81,8 +85,8 @@ export class AuthController {
   @ApiResponse({ status: 422, description: 'Bad Request or API error message' })
   @ApiResponse({ status: 404, description: 'Not found!' })
   @ApiResponse({ status: 500, description: 'Internal server error!' })
-  async forgotPasword(@Res({ passthrough: true }) res: Response,@Body(ValidationPipe) accessTokenDto: AccessTokenDto, @Ip() ip: string) {
-    return await this.authService.generateAccessTokenFromRefreshToken(accessTokenDto?.refreshToken, ip,res);
+  async forgotPasword(@Res({ passthrough: true }) res: Response, @Body(ValidationPipe) accessTokenDto: AccessTokenDto, @Ip() ip: string) {
+    return await this.authService.generateAccessTokenFromRefreshToken(accessTokenDto?.refreshToken, ip, res);
   }
 
   @Post('logout')
@@ -120,13 +124,13 @@ export class AuthController {
   @Get('google/redirect')
   @UseGuards(GoogleOAuthGuard)
   async googleAuthCallback(
-    @CurrentUser() user : User,
+    @CurrentUser() user: User,
     @Res() res: Response,
     @Ip() ip: string
   ) {
-    const data = await this.authService.googleRegister(user,ip,res);
-    
-    const redirectUrl = `http://localhost:5173/api?access_token=${data.access_token}`;
+    const data = await this.authService.googleRegister(user, ip, res);
+
+    const redirectUrl = `${this.configService.get('FRONTEND_URL')}/api?access_token=${data.access_token}`;
     console.log('Redirecting to frontend with access token');
     res.redirect(redirectUrl);
   }

@@ -30,21 +30,6 @@ import { AiModule } from './modules/ai/ai.module';
 
     }),
     
-
-    // MailerModule.forRootAsync({
-    //   imports: [ConfigModule],
-    //   inject: [ConfigService],
-    //   useFactory: (configService: ConfigService) => ({
-    //     transport: {
-    //       host: configService.get<string>('MAILER_HOST'),
-    //       auth: {
-    //         user: configService.get<string>('MAILER_USER'),
-    //         pass: configService.get<string>('MAILER_PASS'),
-    //       },
-    //     },
-    //   }),
-    // }),
-
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
     
 
