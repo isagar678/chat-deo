@@ -14,6 +14,7 @@ import { Server } from 'socket.io';
 import { AuthService } from 'src/modules/auth/auth.service';
 import { UserService } from '../user/user.service';
 import { Chats } from 'src/entities/chat.entity';
+import { GroupService } from '../group/group.service';
 
 const onlineUsers = new Map() //<user id, client id>
 
@@ -24,7 +25,8 @@ export class ChatGateway
 
   constructor(
     private readonly authService: AuthService,
-    private readonly userService: UserService
+    private readonly userService: UserService,
+    private readonly groupService: GroupService
   ) { }
 
   @WebSocketServer() io: Server;
@@ -117,8 +119,27 @@ export class ChatGateway
           fileType: msg.mimeType
         });
       })
+      
+      await this.handleGroupConnection(client)
+
     } catch (err) {
       this.logger.error(`Error occured for user id ${client.userId}`);
+      client.disconnect();
+    }
+    this.logger.debug(`Total connected clients: ${this.io.sockets.sockets.size}`);
+  }
+
+  async handleGroupConnection(client: any, ...args: any[]) {
+    try {
+      const group = await this.groupService.getGroupsByUserId(client.userId);
+
+      if(group){
+        group.forEach(group=>{
+          client.join(group.id.toString());
+        })
+      }
+    } catch (err) {
+      this.logger.error(`Error occured for group joining of user ${client.username} (${client.userId})`);
       client.disconnect();
     }
     this.logger.debug(`Total connected clients: ${this.io.sockets.sockets.size}`);
@@ -131,6 +152,37 @@ export class ChatGateway
     // Notify friends about the user going offline
     if (client.userId && client.username) {
       await this.sendStatusUpdateToFriends(client.userId, client.username, false);
+    }
+  }
+
+  @SubscribeMessage('groupMessage')
+  async sendGroupMessage(
+    @MessageBody() data: {
+      groupId: number;
+      message: string;
+      filePath?: string;
+      fileName?: string;
+      fileSize?: number;
+      fileType?: string;
+    },
+    @ConnectedSocket() client,
+  ){
+    if (client.rooms.has(data?.groupId.toString())) {
+      await this.userService.addChat(
+        client.userId, 
+        data.groupId, 
+        data.message,
+        data.filePath,
+        data.fileName,
+        data.fileSize,
+        data.fileType
+      );
+
+      this.io.to(data.groupId.toString()).emit('groupMessageReceived', {
+        message: data.message,
+        from: client.userId,
+        groupId: data.groupId,
+      });
     }
   }
 

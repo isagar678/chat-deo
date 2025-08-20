@@ -9,6 +9,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ChatGateway } from './modules/chat/chat.gateway';
 import { StorageModule } from './modules/storage/storage.module';
 import { AiModule } from './modules/ai/ai.module';
+import { GroupModule } from './modules/group/group.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { AiModule } from './modules/ai/ai.module';
 
     StorageModule,
     AiModule,
+    GroupModule,
   ],
   controllers: [AppController],
   providers: [AppService, ChatGateway],

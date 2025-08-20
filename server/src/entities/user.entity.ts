@@ -2,6 +2,7 @@ import { Role } from 'src/enum/role.enum';
 import { BaseEntity, Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { Chats } from './chat.entity';
 import { FriendShip } from './friendship.entity';
+import { Group } from './group.entity';
 
 @Entity({ name: 'users' })
 export class User extends BaseEntity {
@@ -38,6 +39,9 @@ export class User extends BaseEntity {
   @OneToMany(() => Chats, (c) => c.to)
   receivedChats: Chats[];
 
+  @ManyToMany((type)=>Group,(group)=>group.users)
+  groups:Group[]
+  
 
   //for reference
 

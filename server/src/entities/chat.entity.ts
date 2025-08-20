@@ -7,6 +7,7 @@ import {
     CreateDateColumn
   } from "typeorm";
 import { User } from "./user.entity";
+import { Group } from "./group.entity";
 
   
   @Entity('chats')
@@ -32,6 +33,10 @@ import { User } from "./user.entity";
     @ManyToOne(() => User, (u) => u.receivedChats, { onDelete: 'CASCADE' })
     @JoinColumn([{ name: 'to_id', referencedColumnName: "id" }])
     to: User;
+
+    @ManyToOne(()=>Group,(group)=>group.chats)
+    @JoinColumn([{name:'group_id',referencedColumnName:'id'}])
+    group:Group
   
     // File metadata
     @Column('text', { name: 'file_path', nullable: true })

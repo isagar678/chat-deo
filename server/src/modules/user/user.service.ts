@@ -87,7 +87,7 @@ export class UserService {
     return Array.from(friendsSet);
   }
 
-  async addChat(from, to, content, filePath?: string, fileName?: string, fileSize?: number, mimeType?: string) {
+  async addChat(from, to, content, filePath?: string, fileName?: string, fileSize?: number, mimeType?: string, groupId?: number) {
     await this.chatsRepo.insert({ 
       from, 
       to, 
