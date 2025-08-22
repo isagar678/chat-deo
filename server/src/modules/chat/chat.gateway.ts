@@ -99,13 +99,19 @@ export class ChatGateway
       // This is for the newly connected client A to know which of THEIR friends are currently online.
       const friendsOfThisUser =await this.sendStatusUpdateToFriends(client.userId, client.username, true);
 
-      const initialFriendStatuses = friendsOfThisUser.map(friend => ({
-        id: friend.id,
-        name: friend.userName,
-        isOnline: onlineUsers.has(friend.id), // Check if friend is in our global onlineUsers map
-      }));
-      client.emit('initialFriendsStatus', initialFriendStatuses);
-      this.logger.debug(`Sent initial status of ${initialFriendStatuses.length} friends to ${client.username}.`);
+      // Add null check to prevent errors
+      if (friendsOfThisUser && Array.isArray(friendsOfThisUser)) {
+        const initialFriendStatuses = friendsOfThisUser.map(friend => ({
+          id: friend.id,
+          name: friend.userName,
+          isOnline: onlineUsers.has(friend.id), // Check if friend is in our global onlineUsers map
+        }));
+        client.emit('initialFriendsStatus', initialFriendStatuses);
+        this.logger.debug(`Sent initial status of ${initialFriendStatuses.length} friends to ${client.username}.`);
+      } else {
+        this.logger.debug(`No friends found for user ${client.username} or error occurred.`);
+        client.emit('initialFriendsStatus', []);
+      }
 
       const allUnreadMessages = await this.userService.getAllUnreadMessages(client.userId)
 
@@ -194,8 +200,9 @@ export class ChatGateway
         data.groupId // Pass groupId as the last parameter
       );
 
-      // Emit to all group members
-      this.io.to(data.groupId.toString()).emit('groupMessageReceived', {
+      // Emit to all group members EXCEPT the sender using Socket.IO rooms
+      // The sender will see their message immediately through local state update
+      const messageData = {
         message: data.message,
         from: client.userId,
         fromName: client.username,
@@ -204,6 +211,46 @@ export class ChatGateway
         fileName: data.fileName,
         fileSize: data.fileSize,
         fileType: data.fileType,
+        timestamp: new Date().toISOString()
+      };
+
+      this.logger.debug(`Preparing to send group message: ${JSON.stringify(messageData)}`);
+
+      // Emit to the group room but exclude the sender
+      // We need to manually emit to each member except the sender
+      const group = await this.groupService.getGroupById(data.groupId);
+      if (group) {
+        this.logger.debug(`Group found with ${group.users.length} members`);
+        
+        group.users.forEach(member => {
+          if (member.id !== client.userId) {
+            this.logger.debug(`Sending message to member ${member.name} (${member.id})`);
+            
+            // Find the socket for this member if they're online
+            const memberSocketId = onlineUsers.get(member.id.toString());
+            if (memberSocketId) {
+              const memberSocket = this.io.sockets.sockets.get(memberSocketId);
+              if (memberSocket) {
+                memberSocket.emit('groupMessageReceived', messageData);
+                this.logger.debug(`Message sent to online member ${member.name} (${member.id})`);
+              } else {
+                this.logger.warn(`Member socket not found for ${member.name} (${member.id})`);
+              }
+            } else {
+              this.logger.debug(`Member ${member.name} (${member.id}) is offline`);
+            }
+          } else {
+            this.logger.debug(`Skipping sender ${member.name} (${member.id})`);
+          }
+        });
+      } else {
+        this.logger.error(`Group ${data.groupId} not found`);
+      }
+
+      // Send confirmation to sender (delivered)
+      client.emit('groupMessageDelivered', {
+        groupId: data.groupId,
+        message: data.message,
         timestamp: new Date().toISOString()
       });
 
@@ -370,22 +417,18 @@ export class ChatGateway
     }
   }
 
-  @SubscribeMessage('joinGroup')
-  handleJoinGroup(
-    @MessageBody() data: { groupId: string },
+  @SubscribeMessage('test')
+  handleTestMessage(
+    @MessageBody() data: any,
     @ConnectedSocket() client,
   ) {
-    // Check if the client's rooms Set already has the groupId
-    if (client.rooms.has(data.groupId)) {
-      console.log(`Client ${client.id} is ALREADY in group ${data.groupId}`);
-      return; // Or emit a message back saying they're already joined
-    }
-
-    // If not, join the group
-    client.join(data.groupId);
-    console.log(`Client ${client.id} successfully JOINED group ${data.groupId}`);
+    this.logger.debug(`Received test message from client ${client.id}: ${JSON.stringify(data)}`);
     
-    // You might want to emit a success message back to the client
-    client.emit('joinedGroupSuccess', { groupId: data.groupId });
+    // Echo back the test message
+    client.emit('testResponse', {
+      message: 'Test response from server',
+      receivedData: data,
+      timestamp: new Date().toISOString()
+    });
   }
 }
