@@ -16,7 +16,7 @@ import { UserService } from '../user/user.service';
 import { Chats } from 'src/entities/chat.entity';
 import { GroupService } from '../group/group.service';
 
-const onlineUsers = new Map() //<user id, client id>
+const onlineUsers = new Map() //<user id as string, client socket id>
 
 @WebSocketGateway({ cors: { origin: '*' } })
 export class ChatGateway
@@ -49,7 +49,7 @@ export class ChatGateway
       for (const friend of friends) {
         // 3. Check if the friend is currently online
         //    (optional, but good for efficiency if you only want to send to online friends)
-        const friendClientId = onlineUsers.get(friend);
+        const friendClientId = onlineUsers.get(String(friend.id));
 
         if (friendClientId) { // If the friend is online
           // 4. Emit the status change event directly to the friend's personal room (which is their userId)
@@ -82,8 +82,8 @@ export class ChatGateway
       client.join(client.userId);
 
       // Handle duplicate connections (disconnect old one if new connection for same user)
-      if (onlineUsers.has(client.userId)) {
-        const previousClientId = onlineUsers.get(client.userId);
+      if (onlineUsers.has(String(client.userId))) {
+        const previousClientId = onlineUsers.get(String(client.userId));
         const previousClient = this.io.sockets.sockets.get(String(previousClientId));
         if (previousClient && previousClient.id !== client.id) {
           previousClient.emit('duplicateConnection', { message: 'You have connected from another device.' });
@@ -92,7 +92,7 @@ export class ChatGateway
         }
       }
 
-      onlineUsers.set(client.userId, client.id); // Store current client ID for this user ID
+      onlineUsers.set(String(client.userId), client.id); // Store current client ID for this user ID
       this.logger.log(`Client ${client.username} (${client.userId}) ${client.id} connected.`);
 
       // --- Send initial status of this user's friends TO this user ---
@@ -104,7 +104,7 @@ export class ChatGateway
         const initialFriendStatuses = friendsOfThisUser.map(friend => ({
           id: friend.id,
           name: friend.userName,
-          isOnline: onlineUsers.has(friend.id), // Check if friend is in our global onlineUsers map
+          isOnline: onlineUsers.has(String(friend.id)), // Check if friend is in our global onlineUsers map
         }));
         client.emit('initialFriendsStatus', initialFriendStatuses);
         this.logger.debug(`Sent initial status of ${initialFriendStatuses.length} friends to ${client.username}.`);
@@ -227,7 +227,7 @@ export class ChatGateway
             this.logger.debug(`Sending message to member ${member.name} (${member.id})`);
             
             // Find the socket for this member if they're online
-            const memberSocketId = onlineUsers.get(member.id.toString());
+            const memberSocketId = onlineUsers.get(String(member.id));
             if (memberSocketId) {
               const memberSocket = this.io.sockets.sockets.get(memberSocketId);
               if (memberSocket) {
@@ -277,7 +277,7 @@ export class ChatGateway
     },
     @ConnectedSocket() client,
   ) {
-    const recipientSocketId = onlineUsers.get(data.recipientId);
+    const recipientSocketId = onlineUsers.get(String(data.recipientId));
     const recipient = this.io.sockets.sockets.get(String(recipientSocketId));
 
     this.logger.log(`Message received from client id: ${client.id}`);
@@ -345,7 +345,7 @@ export class ChatGateway
       await this.userService.markMessagesAsRead(data.from, client.userId);
 
       // Notify sender that their messages were read
-      const senderSocketId = onlineUsers.get(data.from);
+      const senderSocketId = onlineUsers.get(String(data.from));
       const sender = this.io.sockets.sockets.get(String(senderSocketId));
       if (sender) {
         sender.emit('messagesRead', { from: client.userId });
@@ -390,7 +390,7 @@ export class ChatGateway
     @MessageBody() data: { to: string },
     @ConnectedSocket() client,
   ) {
-    const recipientSocketId = onlineUsers.get(data.to);
+    const recipientSocketId = onlineUsers.get(String(data.to));
     const recipient = this.io.sockets.sockets.get(String(recipientSocketId));
 
     if (recipient) {
@@ -406,7 +406,7 @@ export class ChatGateway
     @MessageBody() data: { to: string },
     @ConnectedSocket() client,
   ) {
-    const recipientSocketId = onlineUsers.get(data.to);
+    const recipientSocketId = onlineUsers.get(String(data.to));
     const recipient = this.io.sockets.sockets.get(String(recipientSocketId));
 
     if (recipient) {
