@@ -183,7 +183,7 @@ export class UserController {
     @Body('recipientId') recipientId: string,
     @Req() req: any, 
   ) {
-    const senderId = req.user.sub;
+    const senderId = req.user.id;
 
     const uploadResult = await this.storageService.upload(
       file,
@@ -201,13 +201,13 @@ export class UserController {
     };
   }
 
-  @Get('file/:filePath')
+  @Get('file/*')
   @UseGuards(JwtAuthGuard)
   async getFileUrl(
-    @Param('filePath') filePath: string,
     @Req() req: any,
   ) {
     try {
+      const filePath: string = req.params[0];
       // Create a signed URL for secure file access
       const signedUrl = await this.storageService.getSignedUrl(
         'chat-nest-file-bucket',
