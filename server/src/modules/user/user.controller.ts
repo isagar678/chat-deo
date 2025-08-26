@@ -201,13 +201,18 @@ export class UserController {
     };
   }
 
-  @Get('file/*')
+  // Use a named wildcard segment for path-to-regexp v7 compatibility
+  @Get('file/*path')
   @UseGuards(JwtAuthGuard)
   async getFileUrl(
     @Req() req: any,
   ) {
     try {
-      const filePath: string = req.params[0];
+      const rawPath: string | string[] = (req.params && (req.params.path ?? req.params[0])) as any;
+      const filePath: string = Array.isArray(rawPath) ? rawPath.join('/') : rawPath;
+      if (!filePath || typeof filePath !== 'string') {
+        throw new Error('Invalid file path');
+      }
       // Create a signed URL for secure file access
       const signedUrl = await this.storageService.getSignedUrl(
         'chat-nest-file-bucket',
