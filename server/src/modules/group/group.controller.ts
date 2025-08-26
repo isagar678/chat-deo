@@ -16,8 +16,8 @@ export class GroupController {
   @ApiResponse({ status: 200, description: 'Group created successfully' })
   @ApiResponse({ status: 400, description: 'Bad request' })
   @ApiResponse({ status: 500, description: 'Internal server error' })
-  async createGroup(@CurrentUser() user: User, @Body() body: { name: string }) {
-    return this.groupService.createGroup(user, body.name);
+  async createGroup(@CurrentUser() user: User, @Body() body: { name: string; memberIds?: number[] }) {
+    return this.groupService.createGroup(user, body.name, body.memberIds || []);
   }
 
   @Get('my-groups')
