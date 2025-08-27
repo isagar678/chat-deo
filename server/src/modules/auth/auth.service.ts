@@ -11,26 +11,21 @@ import { ConfigService } from '@nestjs/config';
 import { handleTokenErrors } from 'src/UsefulFunction';
 import { Role } from 'src/enum/role.enum';
 import { Response } from 'express';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
-  
+
   constructor(
-    // private readonly supabaseAdmin: SupabaseClient,
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService
   ) {
-    // this.supabaseAdmin = createClient(
-    //   process.env.SUPABASE_URL || '',
-    //   process.env.SUPABASE_SERVICE_ROLE_KEY || '', 
-    //   { auth: { persistSession: false } }
-    // );
-   }
+  }
 
   async validateUser(username: string, password: string): Promise<any> {
     const user = await this.userService.findOne(username);
-    if (user && user.password === password) {
+    if (user && await bcrypt.compare(password, user.password)) {
       const { password, ...result } = user;
       return result;
     }
@@ -40,7 +35,7 @@ export class AuthService {
   async login(user: any, ip, res: Response) {
     try {
 
-      const payload = { username: user.userName, id: user.id, role: Role.User, sub:user.supabaseAuthId };
+      const payload = { username: user.userName, id: user.id, role: Role.User, sub: user.supabaseAuthId };
       return await this.generateTokenPair(payload, ip, res)
 
     } catch (error) {
@@ -51,22 +46,9 @@ export class AuthService {
   async register(userData, ip, res: Response) {
     const user = await this.userService.findUser(userData);
     if (!user) {
-      // const { data: authData, error: authError } = await this.supabaseAdmin.auth.admin.createUser({
-      //   ...userData
-      // });
-
-      // if (authError) {
-      //   throw new Error(`Supabase auth error: ${authError.message}`);
-      // }
-
-      // userData.supabaseAuthId = authData.user.id;
-
-      await this.userService.create(userData);
-
-      const payload = { username: userData.userName, id: userData.id, role: Role.Admin,sub:userData.supabaseAuthId };
-
+      const created = await this.userService.create(userData);
+      const payload = { username: created.userName, id: created.id, role: Role.User, sub: created.supabaseAuthId };
       return await this.generateTokenPair(payload, ip, res)
-
     } else {
       throw new ConflictException();
     }
@@ -82,8 +64,8 @@ export class AuthService {
     if (!user) {
       throw new Error('Failed to create or find user');
     }
-    
-    const payload = { username: user.userName, id: user.id, role: Role.User };
+
+    const payload = { username: user.userName, id: user.id, role: Role.User, sub: user.supabaseAuthId };
     return await this.generateTokenPair(payload, ip, res)
   }
 
@@ -106,7 +88,7 @@ export class AuthService {
 
       const token = await this.isTokenBlackListed(refreshToken)
 
-      const payload = { id: verifiedPayload.id, username: verifiedPayload.username, role: verifiedPayload.role,sub:verifiedPayload.sub };
+      const payload = { id: verifiedPayload.id, username: verifiedPayload.username, role: verifiedPayload.role, sub: verifiedPayload.sub };
 
 
       // Generate new tokens using a method that handles refresh scenarios
@@ -121,7 +103,7 @@ export class AuthService {
 
     } catch (error) {
       handleTokenErrors(error);
-      throw error; 
+      throw error;
     }
   }
 

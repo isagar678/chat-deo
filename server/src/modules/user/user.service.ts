@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { Chats } from 'src/entities/chat.entity';
 import { FriendShip } from 'src/entities/friendship.entity';
 import { GroupService } from '../group/group.service';
+import * as bcrypt from 'bcrypt';
 
 interface FriendWithMessages {
   friendDetails: User;
@@ -64,6 +65,7 @@ export class UserService {
   }
 
   async create(userData): Promise<any> {
+    userData.password = await bcrypt.hash(userData.password, 10);
     return await this.userRepository.save(userData);
   }
 
