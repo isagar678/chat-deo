@@ -36,12 +36,6 @@ export class UserController {
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get current user avatar info' })
   async getMyAvatar(@CurrentUser() user: User) {
-    console.log('Current user avatar info:', {
-      id: user.id,
-      name: user.name,
-      userName: user.userName,
-      avatar: user.avatar
-    });
     return {
       id: user.id,
       name: user.name,
@@ -249,20 +243,11 @@ export class UserController {
     } catch (error) {
       console.error('Failed to list Supabase buckets:', error);
     }
-    console.log('Avatar upload request received for user:', user.id);
-    console.log('User data:', user);
     
     if (!file) {
       console.error('No file uploaded');
       throw new Error('No file uploaded');
     }
-
-    console.log('File received:', {
-      originalname: file.originalname,
-      mimetype: file.mimetype,
-      size: file.size,
-      buffer: file.buffer ? 'Buffer present' : 'No buffer'
-    });
 
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];

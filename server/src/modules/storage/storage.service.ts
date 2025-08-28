@@ -123,8 +123,6 @@ export class StorageService {
         throw new Error(`Failed to upload avatar to Supabase: ${error.message}`);
       }
 
-      console.log('Upload successful, data:', data);
-
       // Get a signed URL for the uploaded avatar (works even if bucket is private)
       const { data: urlData, error: urlError } = await this.supabase.storage
         .from('chat-nest-file-bucket')
@@ -135,7 +133,6 @@ export class StorageService {
         throw new Error(`Failed to create signed URL: ${urlError.message}`);
       }
 
-      console.log('Signed URL:', urlData.signedUrl);
       return urlData.signedUrl;
     } catch (error) {
       console.error('Avatar upload failed:', error);

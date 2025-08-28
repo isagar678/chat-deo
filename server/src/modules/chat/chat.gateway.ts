@@ -43,7 +43,7 @@ export class ChatGateway
     try {
       // 1. Get the list of friends for the user whose status has changed
       //    This is where you'd fetch from your database
-      const friends = await this.userService.getFriendsOfUser(userId); 
+      const friends = await this.userService.getFriendsOfUser(userId);
 
       // 2. Iterate through each friend
       for (const friend of friends) {
@@ -97,7 +97,7 @@ export class ChatGateway
 
       // --- Send initial status of this user's friends TO this user ---
       // This is for the newly connected client A to know which of THEIR friends are currently online.
-      const friendsOfThisUser =await this.sendStatusUpdateToFriends(client.userId, client.username, true);
+      const friendsOfThisUser = await this.sendStatusUpdateToFriends(client.userId, client.username, true);
 
       // Add null check to prevent errors
       if (friendsOfThisUser && Array.isArray(friendsOfThisUser)) {
@@ -115,7 +115,7 @@ export class ChatGateway
 
       const allUnreadMessages = await this.userService.getAllUnreadMessages(client.userId)
 
-      allUnreadMessages.forEach((msg)=>{
+      allUnreadMessages.forEach((msg) => {
         client.emit('privateMessageReceived', {
           message: msg.content,
           from: msg.from,
@@ -157,7 +157,7 @@ export class ChatGateway
   async handleDisconnect(client: any) {
     onlineUsers.delete(client.userId);
     this.logger.log(`Client id:${client.id} disconnected`);
-    
+
     // Notify friends about the user going offline
     if (client.userId && client.username) {
       await this.sendStatusUpdateToFriends(client.userId, client.username, false);
@@ -175,11 +175,11 @@ export class ChatGateway
       fileType?: string;
     },
     @ConnectedSocket() client,
-  ){
+  ) {
     try {
       // Check if user is in the group
       const isUserInGroup = await this.groupService.isUserInGroup(data.groupId, client.userId);
-      
+
       if (!isUserInGroup) {
         client.emit('groupMessageError', {
           error: 'You are not a member of this group',
@@ -190,7 +190,7 @@ export class ChatGateway
 
       // Save the group message
       await this.userService.addChat(
-        client.userId, 
+        client.userId,
         null, // to is null for group messages
         data.message,
         data.filePath,
@@ -221,11 +221,11 @@ export class ChatGateway
       const group = await this.groupService.getGroupById(data.groupId);
       if (group) {
         this.logger.debug(`Group found with ${group.users.length} members`);
-        
+
         group.users.forEach(member => {
           if (member.id !== client.userId) {
             this.logger.debug(`Sending message to member ${member.name} (${member.id})`);
-            
+
             // Find the socket for this member if they're online
             const memberSocketId = onlineUsers.get(String(member.id));
             if (memberSocketId) {
@@ -266,13 +266,13 @@ export class ChatGateway
 
   @SubscribeMessage('privateMessage')
   async sendPrivateMessage(
-    @MessageBody() data: { 
-      recipientId: string; 
-      message: string; 
-      filePath?: string; 
-      fileName?: string; 
-      fileSize?: number; 
-      fileType?: string; 
+    @MessageBody() data: {
+      recipientId: string;
+      message: string;
+      filePath?: string;
+      fileName?: string;
+      fileSize?: number;
+      fileType?: string;
       clientMessageId?: number;
     },
     @ConnectedSocket() client,
@@ -285,15 +285,15 @@ export class ChatGateway
     try {
       // Always save the chat message first with file metadata
       await this.userService.addChat(
-        client.userId, 
-        data.recipientId, 
+        client.userId,
+        data.recipientId,
         data.message,
         data.filePath,
         data.fileName,
         data.fileSize,
         data.fileType
       );
-      
+
       // Create friendship relationship (this will create friendship if it doesn't exist)
       await this.userService.addFriend(client.userId, data.recipientId);
 
@@ -363,7 +363,7 @@ export class ChatGateway
     try {
       // Check if user is in the group
       const isUserInGroup = await this.groupService.isUserInGroup(data.groupId, client.userId);
-      
+
       if (!isUserInGroup) {
         client.emit('groupMessageError', {
           error: 'You are not a member of this group',
@@ -376,9 +376,9 @@ export class ChatGateway
       await this.userService.markGroupMessagesAsRead(data.groupId, client.userId);
 
       // Notify all group members that messages were read
-      this.io.to(data.groupId.toString()).emit('groupMessagesRead', { 
+      this.io.to(data.groupId.toString()).emit('groupMessagesRead', {
         groupId: data.groupId,
-        readBy: client.userId 
+        readBy: client.userId
       });
     } catch (error) {
       this.logger.error(`Error marking group messages as read: ${error.message}`);
@@ -423,7 +423,7 @@ export class ChatGateway
     @ConnectedSocket() client,
   ) {
     this.logger.debug(`Received test message from client ${client.id}: ${JSON.stringify(data)}`);
-    
+
     // Echo back the test message
     client.emit('testResponse', {
       message: 'Test response from server',

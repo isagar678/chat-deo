@@ -18,7 +18,7 @@ import { GroupModule } from './modules/group/group.module';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory:(configService: ConfigService)=>({
+      useFactory: (configService: ConfigService) => ({
         type: 'postgres',
         url: configService.get<string>('DB_URL'),
         ssl: {
@@ -30,9 +30,9 @@ import { GroupModule } from './modules/group/group.module';
       })
 
     }),
-    
+
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
-    
+
 
     StorageModule,
     AiModule,
