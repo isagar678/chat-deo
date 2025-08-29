@@ -7,7 +7,7 @@ type ChatMessage = { role: 'user' | 'model'; content: string };
 
 @Controller('ai')
 export class AiController {
-  constructor(private readonly configService: ConfigService) {}
+  constructor(private readonly configService: ConfigService) { }
 
   @Post('chat')
   @UseGuards(JwtAuthGuard)
@@ -26,11 +26,11 @@ export class AiController {
     const contents = body?.messages?.length
       ? body.messages.map((m) => ({ role: m.role === 'model' ? 'model' : 'user', parts: [{ text: m.content ?? '' }] }))
       : [
-          {
-            role: 'user',
-            parts: [{ text: (body?.prompt || '').toString() }],
-          },
-        ];
+        {
+          role: 'user',
+          parts: [{ text: (body?.prompt || '').toString() }],
+        },
+      ];
 
     const response = await fetch(url, {
       method: 'POST',
